@@ -17,8 +17,7 @@ export default function DoctorDashboard() {
   const [doctorProfile, setDoctorProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    // Check authentication and role
-    if (!userId || !token || role !== 'DOCTOR') {
+    if (!userId || !token || role !== "DOCTOR") {
       clearAuth();
       window.location.href = "/auth/login";
       return;
@@ -27,9 +26,8 @@ export default function DoctorDashboard() {
     const fetchDoctorProfile = async () => {
       try {
         setIsLoading(true);
-        // Use the /users/me endpoint to get the profile
-        const response = await protectedApi.getProfile();
-        setDoctorProfile(response.data);
+        const profile = await protectedApi.getProfile();
+        setDoctorProfile(profile);
       } catch (err: any) {
         setError(err.response?.data?.message || "Failed to load profile");
         if (err.response?.status === 401) {
@@ -44,18 +42,21 @@ export default function DoctorDashboard() {
     fetchDoctorProfile();
   }, [userId, token, role, clearAuth]);
 
-  if (isLoading)
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         Loading...
       </div>
     );
-  if (error || !doctorProfile)
+  }
+
+  if (error || !doctorProfile) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         {error || "Unable to load dashboard"}
       </div>
     );
+  }
 
   return (
     <div className="flex min-h-screen flex-col">

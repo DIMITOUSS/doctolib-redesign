@@ -3,11 +3,23 @@
 export type UserRole = 'PATIENT' | 'DOCTOR' | 'ADMIN';
 
 // 🔹 Interface for User Information
-export interface User {
-    id: string
 
-    role: UserRole;
+export interface UserProfile {
+    id: string;
     email: string;
+    createdAt: string;
+    updatedAt: string;
+    banned: boolean;
+    gender?: string;
+    licenseNumber?: string;
+    street?: string;
+    city?: string;
+    zipCode?: string;
+    country?: string;
+    googleTokens?: { access_token: string; refresh_token: string; expiry_date: number };
+    specialty?: string;
+    skills?: string[];
+    role: UserRole;
     firstName?: string;
     lastName?: string;
     phone?: string;
@@ -20,9 +32,16 @@ export interface User {
     allergies: string
     medicalConditions: string
 }
-
+// In src/types/auth.ts
+export interface BookAppointmentRequest {
+    doctorId: string;
+    patientId: string;
+    date: string;
+    duration: number;
+    type: string;
+}
 // 🔹 Interface for Register API Request
-export interface RegisterRequest extends User {
+export interface RegisterRequest extends UserProfile {
     password: string;
 
     // Doctor-specific fields (optional for Patients & Admins)
@@ -43,31 +62,61 @@ export interface LoginRequest {
 // 🔹 Interface for Login API Response
 export interface LoginResponse {
     accessToken: string;
-    user: User;
+    user: UserProfile;
 }
 
 // 🔹 Interface for Protected User Profile Response
-export interface UserProfile extends User {
-    createdAt: string;
-    updatedAt: string;
-}
+
 
 // 🔹 Interface for Appointments
 // src/types/auth.ts
 
+// Fully adjusted Appointment interface to match backend response and ScheduleManagement needs
 export interface Appointment {
     id: string;
-    doctorId: string;
-    patientId: string | null; // Nullable if no patient is associated
-    date: string; // ISO Date format
-    status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
-    patient?: {
+    doctorId: string; // Added to match CreateAppointmentDto and entity relation
+    patientId: string; // Non-nullable since patient is required in CreateAppointmentDto
+    date: string; // ISO string (e.g., "2025-03-07T09:00:00.000Z")
+    status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"; // Matches backend status logic
+    duration: number; // Added from backend adjustment (in minutes)
+    type: string; // Added from backend adjustment (e.g., "Check-up", "Consultation")
+    patient: { // Full patient object from relations: ['patient']
         id: string;
         email: string;
-        createdAt: string;
-        updatedAt: string;
-        banned: boolean;
-    } | null; // Nullable if patient info is not available
+        firstName: string; // From Patient/User entity
+        lastName: string;  // From Patient/User entity
+        createdAt: string; // Assuming TypeORM adds these
+        updatedAt: string; // Assuming TypeORM adds these
+        banned: boolean;   // From User entity
+    };
+    doctor: { // Minimal doctor info from relations: ['doctor']
+        id: string;
+        email: string;    // Included in findAll, likely in getAppointments too
+        firstName: string; // From Doctor/User entity
+        lastName: string;  // From Doctor/User entity
+    };
+}
+
+// Supporting Patient interface for consistency (used in GET /patients)
+export interface Patient {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    createdAt: string;
+    updatedAt: string;
+    banned: boolean;
+    address?: string;     // Nullable from Patient entity
+    birthDate?: string;   // Nullable from Patient entity
+}
+
+// Supporting Availability interface for ScheduleManagement
+export interface Availability {
+    id: string;
+    doctorId: string;
+    startTime: string; // ISO string
+    endTime: string;   // ISO string
+    isAvailable: boolean;
 }
 
 
@@ -97,7 +146,7 @@ export interface UploadMedicalFileRequest {
 }
 
 // 🔹 Interface for Doctors API
-export interface Doctor extends User {
+export interface Doctor extends UserProfile {
     bio: string;
     education: string;
     experience: string;

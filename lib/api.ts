@@ -92,6 +92,8 @@ export const doctorsApi = {
         api.post<Availability>('/availability', data).then((res) => res.data),
     deleteAvailability: (slotId: string) =>
         api.delete(`/availability/${slotId}`).then((res) => res.data),
+    createWeeklyAvailability: (doctorId: string, weeklyHours: { day: number; start: string; end: string }[]) =>
+        api.post<Availability[]>(`/availability/weekly/${doctorId}`, weeklyHours).then((res) => res.data),
 };
 
 // New patientsApi for ScheduleManagement patient selection

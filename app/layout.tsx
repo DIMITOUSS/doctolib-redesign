@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Doctolib 2.0",
   description: "A redesigned healthcare platform",
-    generator: 'v0.dev'
+  generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -22,8 +22,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+
           <LocalizationProvider>{children}</LocalizationProvider>
         </ThemeProvider>
+
+
       </body>
     </html>
   )
@@ -32,3 +35,4 @@ export default function RootLayout({
 
 
 import './globals.css'
+import { AuthProvider } from "@/lib/auth-provider"

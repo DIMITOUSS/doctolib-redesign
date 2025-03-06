@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -13,6 +12,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AnimatedContainer } from "@/components/ui/animated-container"
 import { MainNav } from "@/components/main-nav"
 import { Eye, EyeOff, Lock, Mail } from "lucide-react"
+import { useAuthStore } from "@/stores/auth"
+import { authApi } from "@/lib/api"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -23,28 +24,40 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
+  const setAuth = useAuthStore((state) => state.setAuth)
+
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const data = await authApi.login({ email, password });
 
-      // In a real app, you would validate credentials with your backend
-      if (email === "demo@example.com" && password === "password") {
-        // Successful login
-        router.push("/patient/dashboard")
-      } else {
-        setError("Invalid email or password")
+      setAuth(data.accessToken, data.user.role, data.user.id);
+      console.log("User role:", data.user.role);
+
+      switch (data.user.role) {
+        case "DOCTOR":
+          router.push("/doctor/dashboard");
+          break;
+        case "PATIENT":
+          router.push("/patient/dashboard");
+          break;
+        case "ADMIN":
+          router.push("/admin/dashboard");
+          break;
+        default:
+          console.error("Unknown role:", data.user.role);
+          setError("Unauthorized role.");
       }
-    } catch (err) {
-      setError("An error occurred. Please try again.")
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Invalid email or password");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -77,10 +90,7 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
-                    <Link
-                      href="/auth/forgot-password"
-                      className="text-sm text-primary underline-offset-4 hover:underline"
-                    >
+                    <Link href="/auth/forgot-password" className="text-sm text-primary underline-offset-4 hover:underline">
                       Forgot password?
                     </Link>
                   </div>
@@ -107,17 +117,8 @@ export default function LoginPage() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="remember"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(!!checked)}
-                  />
-                  <Label
-                    htmlFor="remember"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Remember me
-                  </Label>
+                  <Checkbox id="remember" checked={rememberMe} onCheckedChange={(checked) => setRememberMe(!!checked)} />
+                  <Label htmlFor="remember" className="text-sm font-medium leading-none">Remember me</Label>
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col space-y-4">
@@ -125,10 +126,7 @@ export default function LoginPage() {
                   {isLoading ? "Logging in..." : "Login"}
                 </Button>
                 <div className="text-center text-sm">
-                  Don&apos;t have an account?{" "}
-                  <Link href="/auth/register" className="text-primary underline-offset-4 hover:underline">
-                    Register
-                  </Link>
+                  Don&apos;t have an account? <Link href="/auth/register" className="text-primary underline-offset-4 hover:underline">Register</Link>
                 </div>
               </CardFooter>
             </form>
@@ -138,4 +136,3 @@ export default function LoginPage() {
     </div>
   )
 }
-

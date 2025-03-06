@@ -1,100 +1,80 @@
-import axios from 'axios'
-import { useAuthStore } from '@/stores/auth'
+// src/lib/api.ts
 
+import axios from 'axios';
+import { useAuthStore } from '@/stores/auth';
+import { LoginRequest, LoginResponse, RegisterRequest, UserProfile, BookAppointmentRequest, MedicalRecord, SearchDoctorsRequest, DoctorAvailability } from '@/types/auth';
 
 export const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
     headers: {
         'Content-Type': 'application/json',
     },
-})
+});
 
-// Request interceptor
+// 🔹 Request Interceptor: Attach Token to Requests
 api.interceptors.request.use(
     (config) => {
-        const token = useAuthStore.getState().token
+        const token = useAuthStore.getState().token;
         if (token) {
-            config.headers.Authorization = `Bearer ${token}`
+            config.headers.Authorization = `Bearer ${token}`;
         }
-        return config
+        return config;
     },
     (error) => Promise.reject(error)
-)
+);
 
-// Response interceptor
+// 🔹 Response Interceptor: Handle Unauthorized Access
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            useAuthStore.getState().clearAuth()
+            useAuthStore.getState().clearAuth();
         }
-        return Promise.reject(error)
+        return Promise.reject(error);
     }
-)
+);
 
-// Auth API
 export const authApi = {
-    login: (email: string, password: string) =>
-        api.post<{
-            accessToken: string;
-            user: {
-                id: string;
-                role: 'PATIENT' | 'DOCTOR' | 'ADMIN';
-                email: string;
-            };
-        }>('/users/login', { email, password }),
+    login: (data: LoginRequest) =>
+        api.post<LoginResponse>("/users/login", data).then((res) => res.data),
+
+    register: (data: RegisterRequest) =>
+        api.post("/users/register", data).then((res) => res.data),
+
+    logout: () => api.post("/users/logout"),
+};
 
 
-    register: (data: {
-        role: string
-        email: string
-        password: string
-        firstName?: string
-        lastName?: string
-        phone?: string
-        address?: string
-    }) => api.post('/users/register', data),
 
-    logout: () => api.post('/users/logout'),
-}
-
-// Protected API endpoints
+// 🔹 Protected User API
 export const protectedApi = {
-    getProfile: () => api.get('/users/me'),
-    updateProfile: (data: any) => api.patch('/users/me', data),
-}
+    getProfile: () => api.get<UserProfile>('/users/me'),
+    updateProfile: (data: Partial<UserProfile>) => api.patch('/users/me', data),
+};
 
-// Appointments API
+// 🔹 Appointments API
 export const appointmentApi = {
-    book: (doctorId: string, patientId: string, date: string) =>
-        api.post('/appointments', { doctorId, patientId, date }),
+    book: (data: BookAppointmentRequest) => api.post('/appointments', data),
+    getPatientAppointments: (patientId: string) => api.get(`/patients/${patientId}/appointments`),
+    getDoctorAppointments: (doctorId: string) => api.get(`/doctors/${doctorId}/appointments`),
+};
 
-    getPatientAppointments: (patientId: string) =>
-        api.get(`/patients/${patientId}/appointments`),
-
-    getDoctorAppointments: (doctorId: string) =>
-        api.get(`/doctors/${doctorId}/appointments`),
-}
-
-// Medical Records API
+// 🔹 Medical Records API
 export const medicalRecordsApi = {
-    getPatientRecords: (patientId: string) =>
-        api.get(`/patients/${patientId}/medical-records`),
-
+    getPatientRecords: (patientId: string) => api.get<MedicalRecord[]>(`/patients/${patientId}/medical-records`),
     uploadFile: (patientId: string, file: File) => {
-        const formData = new FormData()
-        formData.append('file', file)
-        return api.post(`/patients/${patientId}/files`, formData)
+        const formData = new FormData();
+        formData.append('file', file);
+        return api.post(`/patients/${patientId}/files`, formData);
     },
-}
+};
 
-// Doctors API
+// 🔹 Doctors API
 export const doctorsApi = {
-    search: (params: Record<string, string>) =>
-        api.get('/doctors/search', { params }),
+    search: (params: SearchDoctorsRequest) => api.get('/doctors/search', { params }),
+    getAvailability: (doctorId: string) => api.get<DoctorAvailability>(`/doctors/${doctorId}/availability`),
+};
 
-    getAvailability: (doctorId: string) =>
-        api.get(`/doctors/${doctorId}/availability`),
-}
+export default api;
 
-export default api
+

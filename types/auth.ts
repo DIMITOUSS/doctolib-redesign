@@ -53,13 +53,24 @@ export interface UserProfile extends User {
 }
 
 // 🔹 Interface for Appointments
+// src/types/auth.ts
+
 export interface Appointment {
     id: string;
     doctorId: string;
-    patientId: string;
+    patientId: string | null; // Nullable if no patient is associated
     date: string; // ISO Date format
     status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+    patient?: {
+        id: string;
+        email: string;
+        createdAt: string;
+        updatedAt: string;
+        banned: boolean;
+    } | null; // Nullable if patient info is not available
 }
+
+
 
 // 🔹 Interface for Booking an Appointment
 export interface BookAppointmentRequest {

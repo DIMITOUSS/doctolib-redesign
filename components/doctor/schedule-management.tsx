@@ -223,9 +223,8 @@ export function ScheduleManagement() {
                 getAppointmentsForDate(selectedDate).map((appointment) => (
                   <div
                     key={appointment.id}
-                    className={`flex items-center justify-between p-4 rounded-lg border ${
-                      appointment.status === "confirmed" ? "border-primary/50 bg-primary/5" : "border-muted"
-                    }`}
+                    className={`flex items-center justify-between p-4 rounded-lg border ${appointment.status === "confirmed" ? "border-primary/50 bg-primary/5" : "border-muted"
+                      }`}
                   >
                     <div className="flex items-center">
                       <div className="mr-4 flex-shrink-0">

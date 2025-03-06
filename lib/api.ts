@@ -1,8 +1,15 @@
-// src/lib/api.ts
-
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
-import { LoginRequest, LoginResponse, RegisterRequest, UserProfile, BookAppointmentRequest, MedicalRecord, SearchDoctorsRequest, DoctorAvailability } from '@/types/auth';
+import {
+    LoginRequest,
+    LoginResponse,
+    RegisterRequest,
+    UserProfile,
+    BookAppointmentRequest,
+    MedicalRecord,
+    SearchDoctorsRequest,
+    DoctorAvailability
+} from '@/types/auth';
 
 export const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
@@ -11,7 +18,7 @@ export const api = axios.create({
     },
 });
 
-// 🔹 Request Interceptor: Attach Token to Requests
+// Request Interceptor: Attach Token to Requests
 api.interceptors.request.use(
     (config) => {
         const token = useAuthStore.getState().token;
@@ -23,7 +30,7 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// 🔹 Response Interceptor: Handle Unauthorized Access
+// Response Interceptor: Handle Unauthorized Access
 api.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -44,24 +51,21 @@ export const authApi = {
     logout: () => api.post("/users/logout"),
 };
 
-
-
-// 🔹 Protected User API
+// Use /users/me endpoint to get the current user's profile.
 export const protectedApi = {
     getProfile: () => api.get<UserProfile>('/users/me'),
-    updateProfile: (data: Partial<UserProfile>) => api.patch('/users/me', data),
+    updateProfile: (data: Partial<UserProfile>) => api.put('/users/me', data),
 };
 
-// 🔹 Appointments API
 export const appointmentApi = {
     book: (data: BookAppointmentRequest) => api.post('/appointments', data),
     getPatientAppointments: (patientId: string) => api.get(`/patients/${patientId}/appointments`),
     getDoctorAppointments: (doctorId: string) => api.get(`/doctors/${doctorId}/appointments`),
 };
 
-// 🔹 Medical Records API
 export const medicalRecordsApi = {
-    getPatientRecords: (patientId: string) => api.get<MedicalRecord[]>(`/patients/${patientId}/medical-records`),
+    // Assuming your backend expects GET /medical-records/patient/:patientId
+    getPatientRecords: (patientId: string) => api.get<MedicalRecord[]>(`/medical-records/patient/${patientId}`),
     uploadFile: (patientId: string, file: File) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -69,12 +73,9 @@ export const medicalRecordsApi = {
     },
 };
 
-// 🔹 Doctors API
 export const doctorsApi = {
     search: (params: SearchDoctorsRequest) => api.get('/doctors/search', { params }),
     getAvailability: (doctorId: string) => api.get<DoctorAvailability>(`/doctors/${doctorId}/availability`),
 };
 
 export default api;
-
-

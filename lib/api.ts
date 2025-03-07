@@ -9,12 +9,12 @@ import {
     MedicalRecord,
     SearchDoctorsRequest,
     DoctorAvailability,
+    Availability,
     Appointment,
     Patient,
-    Availability,
     Doctor, // Add Patient type
+    PaginatedDoctorsResponse
 } from '@/types/auth';
-
 export const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
     headers: {
@@ -84,8 +84,6 @@ export const medicalRecordsApi = {
 };
 
 export const doctorsApi = {
-    search: (params: SearchDoctorsRequest) =>
-        api.get<Doctor[]>('/doctors/search', { params }).then((res) => res.data),
     getAvailability: (doctorId: string) =>
         api.get<Availability[]>(`/doctors/${doctorId}/availability`).then((res) => res.data),
     createAvailability: (data: { doctorId: string; startTime: string; endTime: string }) =>
@@ -94,6 +92,10 @@ export const doctorsApi = {
         api.delete(`/availability/${slotId}`).then((res) => res.data),
     createWeeklyAvailability: (doctorId: string, weeklyHours: { day: number; start: string; end: string }[]) =>
         api.post<Availability[]>(`/availability/weekly/${doctorId}`, weeklyHours).then((res) => res.data),
+    search: (params: SearchDoctorsRequest) =>
+        api.get<PaginatedDoctorsResponse>('/doctors/search', { params }).then((res) => res.data),
+    autocomplete: (term: string, field: string) =>
+        api.get<Doctor[]>('/doctors/autocomplete', { params: { term, field } }).then((res) => res.data),
 };
 
 // New patientsApi for ScheduleManagement patient selection

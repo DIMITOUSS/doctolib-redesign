@@ -138,13 +138,39 @@ export interface MedicalRecord {
     prescriptions: string[];
     createdAt: string;
 }
+export interface Doctor {
+    id: string;
+    firstName: string;
+    lastName: string;
+    specialty: string;
+    city?: string;
+    // Add other fields as needed
+}
+export interface PaginatedDoctorsResponse {
+    doctors: Doctor[];
+    total: number;
+    page: number;
+    limit: number;
+}
 
+export interface SearchDoctorsRequest {
+    name?: string;
+    specialty?: string;
+    location?: string;
+    // Add other filters as needed
+}
 // 🔹 Interface for Uploading Medical Files
 export interface UploadMedicalFileRequest {
     patientId: string;
     file: File;
 }
-
+// Add this to src/types/auth.ts
+export interface PaginatedDoctorsResponse {
+    doctors: Doctor[];
+    total: number;
+    page: number;
+    limit: number;
+}
 // 🔹 Interface for Doctors API
 export interface Doctor extends UserProfile {
     bio: string;

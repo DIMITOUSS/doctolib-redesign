@@ -1,188 +1,267 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import FullCalendar from "@fullcalendar/react"
+import timeGridPlugin from "@fullcalendar/timegrid"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { CalendarIcon, MapPin, Clock, Search } from "lucide-react"
+import { MapPin } from "lucide-react"
+import { appointmentApi, doctorsApi } from "@/lib/api"
+import { Availability, Doctor, PaginatedDoctorsResponse } from "@/types/auth"
+import { AutocompleteInput } from "@/components/autocomplete-input"
 
-export function AppointmentBookingSystem() {
-  const [date, setDate] = useState<Date>()
-  const [searchResults, setSearchResults] = useState<any[]>([])
-  const [isSearching, setIsSearching] = useState(false)
+interface AppointmentBookingSystemProps {
+  patientId: string
+}
 
-  const handleSearch = () => {
-    setIsSearching(true)
-    // Simulate API call
-    setTimeout(() => {
-      setSearchResults([
-        {
-          id: 1,
-          name: "Dr. Amina Benali",
-          specialty: "Cardiologist",
-          location: "Algiers Medical Center",
-          rating: 4.9,
-          availableTimes: ["09:00", "11:30", "14:00"],
-          image: "/placeholder.svg?height=100&width=100",
-        },
-        {
-          id: 2,
-          name: "Dr. Karim Mensouri",
-          specialty: "Dermatologist",
-          location: "Oran Health Clinic",
-          rating: 4.7,
-          availableTimes: ["10:00", "13:30", "16:00"],
-          image: "/placeholder.svg?height=100&width=100",
-        },
-        {
-          id: 3,
-          name: "Dr. Leila Hadj",
-          specialty: "Pediatrician",
-          location: "Constantine Children's Hospital",
-          rating: 4.8,
-          availableTimes: ["08:30", "12:00", "15:30"],
-          image: "/placeholder.svg?height=100&width=100",
-        },
-      ])
-      setIsSearching(false)
-    }, 1000)
+export function AppointmentBookingSystem({ patientId }: AppointmentBookingSystemProps) {
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedSpecialty, setSelectedSpecialty] = useState("")
+  const [selectedLocation, setSelectedLocation] = useState("")
+  const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [searchResults, setSearchResults] = useState<Doctor[]>([])
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null)
+  const [availableSlots, setAvailableSlots] = useState<Availability[]>([])
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
+  const [appointmentType, setAppointmentType] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const specialties = ["Cardiology", "Dermatology", "Neurology", "Pediatrics", "General Medicine"]
+  const locations = ["Algiers", "Oran", "Constantine", "Annaba", "Blida"]
+
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        setLoading(true)
+        const response: PaginatedDoctorsResponse = await doctorsApi.search({})
+        console.log("Initial doctors fetched:", response)
+        setDoctors(response.doctors)
+      } catch (err: any) {
+        console.error("Fetch doctors error:", err)
+        setError(err.response?.data?.message || "Failed to load doctors")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDoctors()
+  }, [])
+
+  const handleSearch = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response: PaginatedDoctorsResponse = await doctorsApi.search({
+        name: searchQuery || undefined,
+        specialty: selectedSpecialty || undefined,
+        location: selectedLocation || undefined,
+      })
+      console.log("Search results:", response)
+      setSearchResults(response.doctors)
+    } catch (err: any) {
+      console.error("Search error:", err)
+      setError(err.response?.data?.message || "Failed to search doctors")
+    } finally {
+      setLoading(false)
+    }
   }
+
+  useEffect(() => {
+    if (!selectedDoctorId) return
+    const fetchSlots = async () => {
+      try {
+        setLoading(true)
+        const slots = await doctorsApi.getAvailability(selectedDoctorId)
+        setAvailableSlots(slots.filter((slot) => slot.isAvailable))
+        setSelectedSlotId(null)
+      } catch (err: any) {
+        setError(err.response?.data?.message || "Failed to load slots")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchSlots()
+  }, [selectedDoctorId])
+
+  const handleEventClick = (clickInfo: any) => {
+    setSelectedSlotId(clickInfo.event.id)
+    setError(null)
+  }
+
+  const handleBookAppointment = async () => {
+    if (!selectedSlotId || !appointmentType || !selectedDoctorId) {
+      setError("Please select a doctor, slot, and appointment type")
+      return
+    }
+
+    try {
+      setLoading(true)
+      const slot = availableSlots.find((s) => s.id === selectedSlotId)
+      if (!slot) throw new Error("Slot not found")
+
+      const appointmentData = {
+        doctorId: selectedDoctorId,
+        patientId,
+        date: slot.startTime,
+        duration: 15,
+        type: appointmentType,
+      }
+      const newAppointment = await appointmentApi.book(appointmentData)
+      setAvailableSlots(availableSlots.filter((s) => s.id !== selectedSlotId))
+      setSelectedSlotId(null)
+      setAppointmentType("")
+      setError(null)
+      alert(`Appointment booked successfully! ID: ${newAppointment.id}`)
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to book appointment")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const events = availableSlots.map((slot) => ({
+    id: slot.id,
+    title: "Available",
+    start: slot.startTime,
+    end: slot.endTime,
+    backgroundColor: "#e0f7fa",
+    borderColor: "#00acc1",
+  }))
+
+  if (loading && !doctors.length) return <div className="p-4">Loading doctors...</div>
 
   return (
     <div className="container mx-auto py-6">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold mb-2">Find and Book Appointments</h2>
-        <p className="text-muted-foreground">
-          Search for doctors by specialty, location, or name to book your next appointment.
-        </p>
+        <h2 className="text-3xl font-bold mb-2">Book an Appointment</h2>
+        <p className="text-muted-foreground">Search for a doctor and choose an available time slot.</p>
       </div>
 
-      <Card>
+      {error && (
+        <div className="mb-4 p-4 bg-destructive/10 text-destructive rounded">
+          {error}
+        </div>
+      )}
+
+      <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Search Criteria</CardTitle>
-          <CardDescription>Fill in the details to find available doctors</CardDescription>
+          <CardTitle>Find a Doctor</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
-              <Label htmlFor="specialty">Specialty</Label>
-              <Select>
-                <SelectTrigger id="specialty">
-                  <SelectValue placeholder="Select specialty" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cardiology">Cardiology</SelectItem>
-                  <SelectItem value="dermatology">Dermatology</SelectItem>
-                  <SelectItem value="pediatrics">Pediatrics</SelectItem>
-                  <SelectItem value="orthopedics">Orthopedics</SelectItem>
-                  <SelectItem value="neurology">Neurology</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Select>
-                <SelectTrigger id="location">
-                  <SelectValue placeholder="Select location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="algiers">Algiers</SelectItem>
-                  <SelectItem value="oran">Oran</SelectItem>
-                  <SelectItem value="constantine">Constantine</SelectItem>
-                  <SelectItem value="annaba">Annaba</SelectItem>
-                  <SelectItem value="blida">Blida</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : "Select date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="doctor-name">Doctor Name (Optional)</Label>
-              <Input id="doctor-name" placeholder="Enter doctor's name" />
-            </div>
+          <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
+            <AutocompleteInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              field="name"
+              placeholder="Search by doctor name..."
+            />
+            <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Specialty" />
+              </SelectTrigger>
+              <SelectContent>
+                {specialties.map((specialty) => (
+                  <SelectItem key={specialty} value={specialty}>
+                    {specialty}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Location" />
+              </SelectTrigger>
+              <SelectContent>
+                {locations.map((location) => (
+                  <SelectItem key={location} value={location}>
+                    {location}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={handleSearch} disabled={loading}>
+              {loading ? "Searching..." : "Search"}
+            </Button>
           </div>
         </CardContent>
-        <CardFooter>
-          <Button onClick={handleSearch} disabled={isSearching} className="w-full">
-            {isSearching ? "Searching..." : "Search for Doctors"}
-            <Search className="ml-2 h-4 w-4" />
-          </Button>
-        </CardFooter>
       </Card>
 
       {searchResults.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-2xl font-bold mb-4">Available Doctors</h3>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mb-6">
+          <h3 className="text-2xl font-bold mb-4">Search Results</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {searchResults.map((doctor) => (
               <Card key={doctor.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center space-x-4">
-                    <img
-                      src={doctor.image || "/placeholder.svg"}
-                      alt={doctor.name}
-                      className="h-12 w-12 rounded-full object-cover"
-                    />
-                    <div>
-                      <CardTitle className="text-lg">{doctor.name}</CardTitle>
-                      <CardDescription>{doctor.specialty}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center text-sm text-muted-foreground mb-2">
-                    <MapPin className="mr-1 h-4 w-4" />
-                    <span>{doctor.location}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground mb-4">
-                    <span className="font-medium text-primary">★ {doctor.rating}</span>
-                    <span className="ml-1">rating</span>
-                  </div>
+                <CardContent className="p-6">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">Available Times:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {doctor.availableTimes.map((time) => (
-                        <Button key={time} variant="outline" size="sm" className="flex items-center">
-                          <Clock className="mr-1 h-3 w-3" />
-                          {time}
-                        </Button>
-                      ))}
+                    <h3 className="font-bold">{doctor.firstName} {doctor.lastName}</h3>
+                    <p className="text-sm text-muted-foreground">{doctor.specialty || "N/A"}</p>
+                    <div className="flex items-center text-sm">
+                      <MapPin className="mr-1 h-3 w-3 text-muted-foreground" />
+                      <span>{doctor.city || "Unknown location"}</span>
                     </div>
                   </div>
+                  <Button
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => setSelectedDoctorId(doctor.id)}
+                  >
+                    Select Doctor
+                  </Button>
                 </CardContent>
-                <CardFooter>
-                  <Button className="w-full">Book Appointment</Button>
-                </CardFooter>
               </Card>
             ))}
           </div>
         </div>
       )}
+
+      {selectedDoctorId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Available Slots for {doctors.find((d) => d.id === selectedDoctorId)?.firstName} {doctors.find((d) => d.id === selectedDoctorId)?.lastName}</CardTitle>
+            <CardDescription>Click a slot to book</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FullCalendar
+              plugins={[timeGridPlugin]}
+              initialView="timeGridWeek"
+              slotDuration="00:15:00"
+              slotMinTime="08:00:00"
+              slotMaxTime="18:00:00"
+              events={events}
+              eventClick={handleEventClick}
+              height="auto"
+              headerToolbar={{
+                left: "prev,next",
+                center: "title",
+                right: "timeGridWeek,timeGridDay",
+              }}
+            />
+            {selectedSlotId && (
+              <div className="mt-4 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="appointment-type">Appointment Type</Label>
+                  <Select value={appointmentType} onValueChange={setAppointmentType}>
+                    <SelectTrigger id="appointment-type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Check-up">Check-up</SelectItem>
+                      <SelectItem value="Consultation">Consultation</SelectItem>
+                      <SelectItem value="Follow-up">Follow-up</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={handleBookAppointment} disabled={loading}>
+                  {loading ? "Booking..." : "Book Appointment"}
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
-

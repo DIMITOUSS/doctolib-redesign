@@ -74,6 +74,7 @@ export interface LoginResponse {
 // Fully adjusted Appointment interface to match backend response and ScheduleManagement needs
 export interface Appointment {
     id: string;
+    appointmentDate: string; // ISO string
     doctorId: string; // Added to match CreateAppointmentDto and entity relation
     patientId: string; // Non-nullable since patient is required in CreateAppointmentDto
     date: string; // ISO string (e.g., "2025-03-07T09:00:00.000Z")

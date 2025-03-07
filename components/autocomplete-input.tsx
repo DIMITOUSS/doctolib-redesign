@@ -46,7 +46,7 @@ export function AutocompleteInput({ value, onChange, field, placeholder }: Autoc
     }, [value, field])
 
     const handleSelect = (suggestion: Doctor) => {
-        onChange(field === "name" ? `${suggestion.firstName} ${suggestion.lastName}` : suggestion[field] || "")
+        onChange(field === "name" ? `${suggestion.firstName} ${suggestion.lastName}` : (suggestion as any)[field] || "")
         setIsOpen(false)
     }
 

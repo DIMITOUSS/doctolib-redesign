@@ -60,7 +60,7 @@ export const protectedApi = {
 };
 
 export const appointmentApi = {
-    book: (data: BookAppointmentRequest) =>
+    book: (data: { doctorId: string; patientId: string; appointmentDate: string; duration: number }) =>
         api.post<Appointment>('/appointments', data).then((res) => res.data),
     getPatientAppointments: () => // Adjusted to use auth user ID
         api.get<Appointment[]>('/patients/appointments').then((res) => res.data),

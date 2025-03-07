@@ -25,9 +25,9 @@ export function AppointmentBookingSystem({ patientId }: AppointmentBookingSystem
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null)
   const [availableSlots, setAvailableSlots] = useState<Availability[]>([])
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
-  const [appointmentType, setAppointmentType] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const specialties = ["Cardiology", "Dermatology", "Neurology", "Pediatrics", "General Medicine"]
   const locations = ["Algiers", "Oran", "Constantine", "Annaba", "Blida"]
@@ -41,7 +41,7 @@ export function AppointmentBookingSystem({ patientId }: AppointmentBookingSystem
         setDoctors(response.doctors)
       } catch (err: any) {
         console.error("Fetch doctors error:", err)
-        setError(err.response?.data?.message || "Failed to load doctors")
+        setError(err?.response?.data?.message || "Failed to load doctors")
       } finally {
         setLoading(false)
       }
@@ -62,7 +62,7 @@ export function AppointmentBookingSystem({ patientId }: AppointmentBookingSystem
       setSearchResults(response.doctors)
     } catch (err: any) {
       console.error("Search error:", err)
-      setError(err.response?.data?.message || "Failed to search doctors")
+      setError(err?.response?.data?.message || "Failed to search doctors")
     } finally {
       setLoading(false)
     }
@@ -77,7 +77,7 @@ export function AppointmentBookingSystem({ patientId }: AppointmentBookingSystem
         setAvailableSlots(slots.filter((slot) => slot.isAvailable))
         setSelectedSlotId(null)
       } catch (err: any) {
-        setError(err.response?.data?.message || "Failed to load slots")
+        setError(err?.response?.data?.message || "Failed to load slots")
       } finally {
         setLoading(false)
       }
@@ -89,37 +89,40 @@ export function AppointmentBookingSystem({ patientId }: AppointmentBookingSystem
     setSelectedSlotId(clickInfo.event.id)
     setError(null)
   }
-
   const handleBookAppointment = async () => {
-    if (!selectedSlotId || !appointmentType || !selectedDoctorId) {
-      setError("Please select a doctor, slot, and appointment type")
-      return
+    if (!selectedSlotId || !selectedDoctorId) {
+      setError("Please select a doctor and a slot");
+      return;
     }
 
     try {
-      setLoading(true)
-      const slot = availableSlots.find((s) => s.id === selectedSlotId)
-      if (!slot) throw new Error("Slot not found")
+      setLoading(true);
+      const slot = availableSlots.find((s) => s.id === selectedSlotId);
+      if (!slot) throw new Error("Slot not found");
 
       const appointmentData = {
         doctorId: selectedDoctorId,
         patientId,
-        date: slot.startTime,
-        duration: 15,
-        type: appointmentType,
-      }
-      const newAppointment = await appointmentApi.book(appointmentData)
-      setAvailableSlots(availableSlots.filter((s) => s.id !== selectedSlotId))
-      setSelectedSlotId(null)
-      setAppointmentType("")
-      setError(null)
-      alert(`Appointment booked successfully! ID: ${newAppointment.id}`)
+        appointmentDate: slot.startTime, // ISO string like "2025-03-06T07:00:18.005Z"
+        duration: 30, // Default duration in minutes
+      };
+
+      console.log("Appointment data being sent:", appointmentData);
+
+      const newAppointment = await appointmentApi.book(appointmentData);
+      setAvailableSlots(availableSlots.filter((s) => s.id !== selectedSlotId));
+      setSelectedSlotId(null);
+      setError(null);
+      setSuccessMessage(`Appointment booked successfully! ID: ${newAppointment.id}`);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to book appointment")
+      console.error("Booking error:", err?.response?.data);
+      setError(err?.response?.data?.message || "Failed to book appointment");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+
 
   const events = availableSlots.map((slot) => ({
     id: slot.id,
@@ -142,6 +145,11 @@ export function AppointmentBookingSystem({ patientId }: AppointmentBookingSystem
       {error && (
         <div className="mb-4 p-4 bg-destructive/10 text-destructive rounded">
           {error}
+        </div>
+      )}
+      {successMessage && (
+        <div className="mb-4 p-4 bg-success/10 text-success rounded">
+          {successMessage}
         </div>
       )}
 
@@ -187,6 +195,10 @@ export function AppointmentBookingSystem({ patientId }: AppointmentBookingSystem
           </div>
         </CardContent>
       </Card>
+
+      {searchResults.length === 0 && !loading && (
+        <div className="p-4">No doctors found for your search criteria.</div>
+      )}
 
       {searchResults.length > 0 && (
         <div className="mb-6">
@@ -241,19 +253,7 @@ export function AppointmentBookingSystem({ patientId }: AppointmentBookingSystem
             />
             {selectedSlotId && (
               <div className="mt-4 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="appointment-type">Appointment Type</Label>
-                  <Select value={appointmentType} onValueChange={setAppointmentType}>
-                    <SelectTrigger id="appointment-type">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Check-up">Check-up</SelectItem>
-                      <SelectItem value="Consultation">Consultation</SelectItem>
-                      <SelectItem value="Follow-up">Follow-up</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+
                 <Button onClick={handleBookAppointment} disabled={loading}>
                   {loading ? "Booking..." : "Book Appointment"}
                 </Button>
@@ -265,3 +265,4 @@ export function AppointmentBookingSystem({ patientId }: AppointmentBookingSystem
     </div>
   )
 }
+

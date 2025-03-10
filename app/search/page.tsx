@@ -1,5 +1,6 @@
-import { AdvancedSearch } from "@/components/search/advanced-search"
+
 import { MainNav } from "@/components/main-nav"
+import { AdvancedSearch } from "@/components/search/advanced-search"
 
 export default function SearchPage() {
   return (

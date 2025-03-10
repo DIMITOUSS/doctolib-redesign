@@ -4,6 +4,7 @@ export type UserRole = 'PATIENT' | 'DOCTOR' | 'ADMIN';
 
 // 🔹 Interface for User Information
 
+
 export interface UserProfile {
     id: string;
     email: string;
@@ -18,27 +19,41 @@ export interface UserProfile {
     country?: string;
     googleTokens?: { access_token: string; refresh_token: string; expiry_date: number };
     specialty?: string;
-    skills?: string[];
+    skills?: string[]; // Used as languages in frontend
     role: UserRole;
     firstName?: string;
     lastName?: string;
     phone?: string;
     address?: string;
-    birthDate: string
-    password: string
+    birthDate: string; // Optional, added ? since not always present
+    password?: string; // Shouldn’t be returned by API, but kept for register
+    emergencyContact?: string;
+    bloodType?: string;
+    allergies?: string;
+    medicalConditions?: string;
+    // Add doctor-specific fields
+    bio?: string;
+    education?: string;
+    experience?: string; // Could be string (e.g., "10 years") or number
+}
 
-    emergencyContact: string
-    bloodType: string
-    allergies: string
-    medicalConditions: string
+export interface Doctor extends UserProfile {
+    bio: string; // Required for doctors
+    education: string;
+    experience: string;
+    specialty: string; // Required for doctors
+    licenseNumber: string; // 
+    // Required for doctors
+    image?: string; // Added for profile picture
+    availableToday?: boolean; // Added for availability filter
 }
 // In src/types/auth.ts
 export interface BookAppointmentRequest {
     doctorId: string;
     patientId: string;
     date: string;
+    appointmentDate: string; // Renamed from 'date' for consistency
     duration: number;
-    type: string;
 }
 // 🔹 Interface for Register API Request
 export interface RegisterRequest extends UserProfile {
@@ -94,7 +109,8 @@ export interface Appointment {
         id: string;
         email: string;    // Included in findAll, likely in getAppointments too
         firstName: string; // From Doctor/User entity
-        lastName: string;  // From Doctor/User entity
+        lastName: string;
+        specialty: string;  // From Doctor/User entity
     };
 }
 
@@ -108,16 +124,20 @@ export interface Patient {
     updatedAt: string;
     banned: boolean;
     address?: string;     // Nullable from Patient entity
-    birthDate?: string;   // Nullable from Patient entity
+    birthDate: string;   // Nullable from Patient entity
 }
 
 // Supporting Availability interface for ScheduleManagement
+// src/types/auth.ts
+// src/types/auth.ts
 export interface Availability {
     id: string;
     doctorId: string;
-    startTime: string; // ISO string
-    endTime: string;   // ISO string
-    isAvailable: boolean;
+    startTime: string; // ISO string or time string (e.g., "08:00:00")
+    endTime: string;   // ISO string or time string (e.g., "18:00:00")
+    dayOfWeek?: string; // Optional, e.g., "Mon", "Tue", etc., for weekly scheduling
+    isAvailable?: boolean;
+    breakSlots: string// Optional, defaults to true for defined slots
 }
 
 
@@ -148,22 +168,63 @@ export interface Doctor {
     // Add other fields as needed
 }
 export interface PaginatedDoctorsResponse {
+
     doctors: Doctor[];
+    availableToday: boolean;
     total: number;
     page: number;
     limit: number;
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    specialty?: string;
+    city?: string; // Adjust based on backend (e.g., could be `location`)
+    image?: string;
+
 }
 
 export interface SearchDoctorsRequest {
+    ids?: string[];
     name?: string;
     specialty?: string;
     location?: string;
+    term?: string;
+    availableToday?: boolean; // Add if backend supports
+
+    page?: number; // For pagination (optional)
+    limit?: number; //
     // Add other filters as needed
 }
 // 🔹 Interface for Uploading Medical Files
 export interface UploadMedicalFileRequest {
     patientId: string;
     file: File;
+}
+export interface CreateUserDto {
+    email: string;
+    password: string;
+    confirmPassword: string;
+    role: UserRole;
+    firstName?: string;
+    lastName?: string;
+    gender?: string;
+    birthDate?: string;
+    phone?: string;
+    specialty?: string; // Changed from specialization to match backend
+    licenseNumber?: string;
+    experience?: string;
+    education?: string;
+    bio?: string;
+    emergencyContact?: string;
+    bloodType?: string;
+    allergies?: string;
+    medicalConditions?: string;
+    street?: string;
+    city?: string;
+    zipCode?: string;
+    country?: string;
+    skills?: string[];
 }
 // Add this to src/types/auth.ts
 export interface PaginatedDoctorsResponse {

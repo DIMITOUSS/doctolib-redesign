@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/stores/auth";
-import { protectedApi } from "@/lib/api";
-import { UserProfile } from "@/types/auth";
+import { protectedApi, doctorsApi } from "@/lib/api";
+import { UserProfile, Appointment } from "@/types/auth";
 import { ScheduleManagement } from "@/components/doctor/schedule-management";
 import { PatientList } from "@/components/doctor/patient-list";
 import { PrescriptionSystem } from "@/components/doctor/prescription-system";
@@ -15,23 +15,33 @@ export default function DoctorDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [doctorProfile, setDoctorProfile] = useState<UserProfile | null>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
 
   useEffect(() => {
-    // Check authentication and role
-    if (!userId || !token || role !== 'DOCTOR') {
+    if (!userId || !token || role !== "DOCTOR") {
       clearAuth();
       window.location.href = "/auth/login";
       return;
     }
 
-    const fetchDoctorProfile = async () => {
+    const fetchDoctorData = async () => {
       try {
         setIsLoading(true);
-        // Use the /users/me endpoint to get the profile
-        const response = await protectedApi.getProfile();
-        setDoctorProfile(response);
+        const profile = await protectedApi.getProfile();
+        console.log("Doctor ID:", profile.id);
+        setDoctorProfile(profile);
+
+        try {
+          const appts = await doctorsApi.getUpcomingAppointments(profile.id);
+          console.log("Appointments fetched:", appts);
+          setAppointments(appts || []);
+        } catch (error: any) {
+          console.log("Error fetching appointments:", error.response?.status, error.message);
+          if (error.response?.status === 404) setAppointments([]);
+          else throw error;
+        }
       } catch (err: any) {
-        setError(err.response?.data?.message || "Failed to load profile");
+        setError(err.response?.data?.message || "Failed to load dashboard data");
         if (err.response?.status === 401) {
           clearAuth();
           window.location.href = "/auth/login";
@@ -41,15 +51,11 @@ export default function DoctorDashboard() {
       }
     };
 
-    fetchDoctorProfile();
+    fetchDoctorData();
   }, [userId, token, role, clearAuth]);
 
   if (isLoading)
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        Loading...
-      </div>
-    );
+    return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
   if (error || !doctorProfile)
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -74,7 +80,7 @@ export default function DoctorDashboard() {
             <ScheduleManagement doctorId={userId!} />
           </TabsContent>
           <TabsContent value="patients">
-            <PatientList doctorId={userId!} />
+            <PatientList doctorId={userId!} appointments={appointments} />
           </TabsContent>
           <TabsContent value="prescriptions">
             <PrescriptionSystem doctorId={userId!} />

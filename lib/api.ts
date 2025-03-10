@@ -1,3 +1,4 @@
+// /lib/api.ts
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
 import {
@@ -8,13 +9,14 @@ import {
     BookAppointmentRequest,
     MedicalRecord,
     SearchDoctorsRequest,
-    DoctorAvailability,
     Availability,
     Appointment,
     Patient,
-    Doctor, // Add Patient type
-    PaginatedDoctorsResponse
+    Doctor,
+    PaginatedDoctorsResponse,
+    CreateUserDto
 } from '@/types/auth';
+
 export const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
     headers: {
@@ -22,7 +24,6 @@ export const api = axios.create({
     },
 });
 
-// Request Interceptor: Attach Token to Requests
 api.interceptors.request.use(
     (config) => {
         const token = useAuthStore.getState().token;
@@ -34,7 +35,6 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Handle Unauthorized Access
 api.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -48,9 +48,8 @@ api.interceptors.response.use(
 export const authApi = {
     login: (data: LoginRequest) =>
         api.post<LoginResponse>("/users/login", data).then((res) => res.data),
-    register: (data: RegisterRequest) =>
+    register: (data: CreateUserDto) =>
         api.post<UserProfile>("/users/register", data).then((res) => res.data),
-    // logout: () => api.post("/users/logout"), // Removed - no backend endpoint; add if implemented
 };
 
 export const protectedApi = {
@@ -60,21 +59,20 @@ export const protectedApi = {
 };
 
 export const appointmentApi = {
-    book: (data: { doctorId: string; patientId: string; appointmentDate: string; duration: number }) =>
+    book: (data: { doctorId: string; patientId: string; appointmentDate: string; duration: number; type: string }) =>
         api.post<Appointment>('/appointments', data).then((res) => res.data),
-    getPatientAppointments: () => // Adjusted to use auth user ID
+    getPatientAppointments: () =>
         api.get<Appointment[]>('/patients/appointments').then((res) => res.data),
     getDoctorAppointments: (doctorId: string) =>
         api.get<Appointment[]>(`/doctors/${doctorId}/appointments`).then((res) => res.data),
     deleteAppointment: (appointmentId: string) =>
         api.delete(`/appointments/${appointmentId}`).then((res) => res.data),
-    // In api.ts
     updateAppointment: (id: string, data: Partial<Appointment>) =>
         api.put<Appointment>(`/appointments/${id}`, data).then((res) => res.data)
 };
 
 export const medicalRecordsApi = {
-    getPatientRecords: () => // Adjusted to use auth user ID
+    getPatientRecords: () =>
         api.get<MedicalRecord[]>('/patients/medical-records').then((res) => res.data),
     uploadFile: (patientId: string, file: File) => {
         const formData = new FormData();
@@ -84,8 +82,12 @@ export const medicalRecordsApi = {
 };
 
 export const doctorsApi = {
-    getAvailability: (doctorId: string) =>
-        api.get<Availability[]>(`/doctors/${doctorId}/availability`).then((res) => res.data),
+    markSlotsAsUnavailable: (doctorId: string, startTime: string, endTime: string) =>
+        api.patch(`/availability/doctor/${doctorId}/unavailable`, { startTime, endTime }).then((res) => res.data),
+    deleteAllAvailability: (doctorId: string) =>
+        api.delete(`/availability/doctor/${doctorId}`).then((res) => res.data),
+    getAvailability: (doctorId: string, date?: string) =>
+        api.get<Availability[]>(`/doctors/${doctorId}/availability`, { params: { date } }).then((res) => res.data),
     createAvailability: (data: { doctorId: string; startTime: string; endTime: string }) =>
         api.post<Availability>('/availability', data).then((res) => res.data),
     deleteAvailability: (slotId: string) =>
@@ -96,9 +98,12 @@ export const doctorsApi = {
         api.get<PaginatedDoctorsResponse>('/doctors/search', { params }).then((res) => res.data),
     autocomplete: (term: string, field: string) =>
         api.get<Doctor[]>('/doctors/autocomplete', { params: { term, field } }).then((res) => res.data),
+    getDoctorDetails: (doctorId: string) =>
+        api.get<Doctor>(`/doctors/${doctorId}`).then((res) => res.data),
+    getUpcomingAppointments: (doctorId: string) => // Fix: Use api instead of protectedApi
+        api.get<Appointment[]>(`/doctors/${doctorId}/upcoming-appointments`).then((res) => res.data),
 };
 
-// New patientsApi for ScheduleManagement patient selection
 export const patientsApi = {
     getPatients: () =>
         api.get<Patient[]>('/patients').then((res) => res.data),

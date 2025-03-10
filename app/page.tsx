@@ -204,7 +204,7 @@ export default function HomePage() {
                   <Link href="/auth/register">Create an Account</Link>
                 </Button>
                 <Button asChild size="lg">
-                  <Link href="/auth/login">Login</Link>
+                  <Link href="/users/login">Login</Link>
                 </Button>
               </div>
             </div>

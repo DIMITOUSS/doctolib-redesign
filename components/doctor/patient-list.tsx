@@ -1,78 +1,47 @@
-"use client"
+// components/doctor/patient-list.tsx
+"use client";
 
-import { useState, useEffect } from "react"
-import { appointmentApi } from "@/lib/api"
-import { Appointment } from "@/types/auth"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Appointment } from "@/types/auth";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 interface PatientListProps {
-  doctorId: string
+  doctorId: string;
+  appointments: Appointment[];
 }
 
-export function PatientList({ doctorId }: PatientListProps) {
-  const [patients, setPatients] = useState<Appointment[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const fetchPatients = async () => {
-      try {
-        setLoading(true)
-        const response = await appointmentApi.getDoctorAppointments(doctorId)
-        // Create a map using a unique identifier:
-        // Use the nested patient id if available, otherwise fallback to patientId.
-        const uniquePatients = Array.from(
-          new Map(
-            (response.data as Appointment[]).map((appt: Appointment) => [
-              appt.patient?.id || appt.patientId,
-              appt
-            ])
-          ).values()
-        ) as Appointment[]  // <-- Type assertion here
-        setPatients(uniquePatients)
-      } catch (err) {
-        setError("Failed to load patient list")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchPatients()
-  }, [doctorId])
-
-  if (loading) return <p>Loading patients...</p>
-  if (error) return <p>{error}</p>
-
+export function PatientList({ doctorId, appointments }: PatientListProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your Patients</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Patient ID</TableHead>
-              <TableHead>Last Appointment</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {patients.map((patient, index) => {
-              // Determine a unique key using the nested patient id or fallback to patientId or index.
-              const key = patient.patient?.id || patient.patientId || index.toString();
-              return (
-                <TableRow key={key}>
-                  <TableCell>{patient.patient?.id || patient.patientId}</TableCell>
-                  <TableCell>{new Date(patient.date).toLocaleDateString()}</TableCell>
-                  <TableCell>{patient.status}</TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  )
+    <div className="space-y-4">
+      <h2 className="text-2xl font-semibold">Upcoming Appointments</h2>
+      {appointments.length === 0 ? (
+        <p>No upcoming appointments.</p>
+      ) : (
+        appointments.map((appointment) => (
+          <Card key={appointment.id}>
+            <CardContent className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-4">
+                <Avatar>
+                  <AvatarFallback>
+                    {appointment.patient.firstName[0]}
+                    {appointment.patient.lastName[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold">
+                    {appointment.patient.firstName} {appointment.patient.lastName}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(appointment.appointmentDate).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline">View Details</Button>
+            </CardContent>
+          </Card>
+        ))
+      )}
+    </div>
+  );
 }

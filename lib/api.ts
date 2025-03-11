@@ -14,7 +14,8 @@ import {
     Patient,
     Doctor,
     PaginatedDoctorsResponse,
-    CreateUserDto
+    CreateUserDto,
+    NotificationPreference
 } from '@/types/auth';
 
 export const api = axios.create({
@@ -68,7 +69,11 @@ export const appointmentApi = {
     deleteAppointment: (appointmentId: string) =>
         api.delete(`/appointments/${appointmentId}`).then((res) => res.data),
     updateAppointment: (id: string, data: Partial<Appointment>) =>
-        api.put<Appointment>(`/appointments/${id}`, data).then((res) => res.data)
+        api.put<Appointment>(`/appointments/${id}`, data).then((res) => res.data),
+    getById: (appointmentId: string) =>
+        api.get<{ data: Appointment }>(`/appointments/${appointmentId}`)
+            .then((res) => res.data.data), // ✅ FIX: Return only `data`
+
 };
 
 export const medicalRecordsApi = {
@@ -107,6 +112,13 @@ export const doctorsApi = {
 export const patientsApi = {
     getPatients: () =>
         api.get<Patient[]>('/patients').then((res) => res.data),
+};
+// Add this to lib/api.ts
+export const notificationApi = {
+    getPreferences: (userId: string) =>
+        api.get(`/notification-preferences/${userId}`).then((res) => res.data),
+    updatePreferences: (userId: string, preferences: Partial<NotificationPreference>) =>
+        api.put(`/notification-preferences/${userId}`, preferences).then((res) => res.data),
 };
 
 export default api;

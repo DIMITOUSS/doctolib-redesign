@@ -80,7 +80,7 @@ export default function DoctorDashboard() {
             <ScheduleManagement doctorId={userId!} />
           </TabsContent>
           <TabsContent value="patients">
-            <PatientList doctorId={userId!} appointments={appointments} />
+            <PatientList doctorId={userId!} appointments={{ data: appointments }} />
           </TabsContent>
           <TabsContent value="prescriptions">
             <PrescriptionSystem doctorId={userId!} />

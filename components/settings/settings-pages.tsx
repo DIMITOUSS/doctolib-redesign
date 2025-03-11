@@ -1,21 +1,77 @@
-"use client"
+"use client";
 
-import { Badge } from "@/components/ui/badge"
-
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { User, Bell, Shield, CreditCard, Globe, HelpCircle, Upload, FileText } from "lucide-react"
+import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  User,
+  Bell,
+  Shield,
+  CreditCard,
+  Globe,
+  HelpCircle,
+  Upload,
+  FileText,
+} from "lucide-react";
+import { useAuthStore } from "@/stores/auth";
+import { notificationApi } from "@/lib/api"; // Add this API file if not exists
 
 export function SettingsPages() {
-  const [activeTab, setActiveTab] = useState("profile")
+  const { userId, token } = useAuthStore();
+  const [activeTab, setActiveTab] = useState("profile");
+  const [preferences, setPreferences] = useState({
+    emailAppointments: true,
+    emailMessages: true,
+    emailUpdates: false,
+    smsAppointments: true,
+    smsMessages: false,
+    appAppointments: true,
+    appMessages: true,
+    appUpdates: false,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      if (!userId || !token) return;
+      try {
+        setLoading(true);
+        const data = await notificationApi.getPreferences(userId);
+        setPreferences(data);
+      } catch (error) {
+        console.error("Failed to fetch notification preferences:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPreferences();
+  }, [userId, token]);
+
+  const handleSavePreferences = async () => {
+    if (!userId || !token) return;
+    try {
+      setLoading(true);
+      await notificationApi.updatePreferences(userId, preferences);
+      alert("Preferences saved successfully!");
+    } catch (error) {
+      console.error("Failed to save notification preferences:", error);
+      alert("Failed to save preferences.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSwitchChange = (key: string) => (checked: boolean) => {
+    setPreferences((prev) => ({ ...prev, [key]: checked }));
+  };
 
   return (
     <div className="container mx-auto py-6">
@@ -192,7 +248,11 @@ export function SettingsPages() {
                           Receive email notifications about upcoming appointments
                         </p>
                       </div>
-                      <Switch id="email-appointments" defaultChecked />
+                      <Switch
+                        id="email-appointments"
+                        checked={preferences.emailAppointments}
+                        onCheckedChange={handleSwitchChange("emailAppointments")}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -203,7 +263,11 @@ export function SettingsPages() {
                           Receive email notifications when you get new messages
                         </p>
                       </div>
-                      <Switch id="email-messages" defaultChecked />
+                      <Switch
+                        id="email-messages"
+                        checked={preferences.emailMessages}
+                        onCheckedChange={handleSwitchChange("emailMessages")}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -214,7 +278,11 @@ export function SettingsPages() {
                           Receive email notifications about system updates and new features
                         </p>
                       </div>
-                      <Switch id="email-updates" />
+                      <Switch
+                        id="email-updates"
+                        checked={preferences.emailUpdates}
+                        onCheckedChange={handleSwitchChange("emailUpdates")}
+                      />
                     </div>
                   </div>
                 </div>
@@ -231,7 +299,11 @@ export function SettingsPages() {
                           Receive SMS notifications about upcoming appointments
                         </p>
                       </div>
-                      <Switch id="sms-appointments" defaultChecked />
+                      <Switch
+                        id="sms-appointments"
+                        checked={preferences.smsAppointments}
+                        onCheckedChange={handleSwitchChange("smsAppointments")}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -242,7 +314,11 @@ export function SettingsPages() {
                           Receive SMS notifications when you get new messages
                         </p>
                       </div>
-                      <Switch id="sms-messages" />
+                      <Switch
+                        id="sms-messages"
+                        checked={preferences.smsMessages}
+                        onCheckedChange={handleSwitchChange("smsMessages")}
+                      />
                     </div>
                   </div>
                 </div>
@@ -259,7 +335,11 @@ export function SettingsPages() {
                           Receive in-app notifications about upcoming appointments
                         </p>
                       </div>
-                      <Switch id="app-appointments" defaultChecked />
+                      <Switch
+                        id="app-appointments"
+                        checked={preferences.appAppointments}
+                        onCheckedChange={handleSwitchChange("appAppointments")}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -270,7 +350,11 @@ export function SettingsPages() {
                           Receive in-app notifications when you get new messages
                         </p>
                       </div>
-                      <Switch id="app-messages" defaultChecked />
+                      <Switch
+                        id="app-messages"
+                        checked={preferences.appMessages}
+                        onCheckedChange={handleSwitchChange("appMessages")}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -281,13 +365,19 @@ export function SettingsPages() {
                           Receive in-app notifications about system updates and new features
                         </p>
                       </div>
-                      <Switch id="app-updates" defaultChecked />
+                      <Switch
+                        id="app-updates"
+                        checked={preferences.appUpdates}
+                        onCheckedChange={handleSwitchChange("appUpdates")}
+                      />
                     </div>
                   </div>
                 </div>
               </CardContent>
               <CardFooter>
-                <Button>Save Preferences</Button>
+                <Button onClick={handleSavePreferences} disabled={loading}>
+                  {loading ? "Saving..." : "Save Preferences"}
+                </Button>
               </CardFooter>
             </Card>
           )}
@@ -623,6 +713,6 @@ export function SettingsPages() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 

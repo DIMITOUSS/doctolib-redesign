@@ -157,6 +157,10 @@ export default function RegisterPage() {
       }
 
       if (role === "doctor") {
+        const parsedBirthDate = new Date(formData.birthDate);
+
+        userData.birthDate = parsedBirthDate.toISOString();
+
         userData.street = formData.street;
         userData.city = formData.city;
         userData.zipCode = formData.zipCode;
@@ -357,13 +361,14 @@ export default function RegisterPage() {
 
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="birthDate">Date of Birth *</Label>
               <Input
-                id="phone"
-                name="phone"
-                value={formData.phone}
+                id="birthDate"
+                name="birthDate"
+                type="date"
+                value={formData.birthDate}
                 onChange={handleInputChange}
-                placeholder="+213 555 123 456"
+                required
               />
             </div>
             <div className="space-y-2">

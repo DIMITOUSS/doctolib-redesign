@@ -19,22 +19,26 @@ export interface UserProfile {
     country?: string;
     googleTokens?: { access_token: string; refresh_token: string; expiry_date: number };
     specialty?: string;
-    skills?: string[]; // Used as languages in frontend
+    skills?: string[];
     role: UserRole;
     firstName?: string;
     lastName?: string;
     phone?: string;
     address?: string;
-    birthDate: string; // Optional, added ? since not always present
-    password?: string; // Shouldn’t be returned by API, but kept for register
+    birthDate: string;
+    password?: string;
     emergencyContact?: string;
     bloodType?: string;
     allergies?: string;
     medicalConditions?: string;
-    // Add doctor-specific fields
     bio?: string;
     education?: string;
-    experience?: string; // Could be string (e.g., "10 years") or number
+    experience?: string;
+    notificationSettings?: {
+        email: { appointments: boolean; messages: boolean; reminders: boolean; system: boolean };
+        push: { appointments: boolean; messages: boolean; reminders: boolean; system: boolean };
+        sms: { appointments: boolean; messages: boolean; reminders: boolean; system: boolean };
+    };
 }
 
 export interface Doctor extends UserProfile {
@@ -89,6 +93,7 @@ export interface LoginResponse {
 // Fully adjusted Appointment interface to match backend response and ScheduleManagement needs
 export interface Appointment {
     id: string;
+    createdAt: string;
     appointmentDate: string; // ISO string
     doctorId: string; // Added to match CreateAppointmentDto and entity relation
     patientId: string; // Non-nullable since patient is required in CreateAppointmentDto
@@ -96,6 +101,8 @@ export interface Appointment {
     status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"; // Matches backend status logic
     duration: number; // Added from backend adjustment (in minutes)
     type: string; // Added from backend adjustment (e.g., "Check-up", "Consultation")
+    notes: string   // From User entity
+
     patient: { // Full patient object from relations: ['patient']
         id: string;
         email: string;
@@ -103,7 +110,7 @@ export interface Appointment {
         lastName: string;  // From Patient/User entity
         createdAt: string; // Assuming TypeORM adds these
         updatedAt: string; // Assuming TypeORM adds these
-        banned: boolean;   // From User entity
+        banned: boolean;
     };
     doctor: { // Minimal doctor info from relations: ['doctor']
         id: string;
@@ -114,6 +121,28 @@ export interface Appointment {
     };
 }
 
+export interface NotificationPreference {
+    id: string;
+    emailAppointments: boolean;
+
+    emailMessages: boolean;
+
+    emailUpdates: boolean;
+
+
+    smsAppointments: boolean;
+
+
+    smsMessages: boolean;
+
+
+    appAppointments: boolean;
+
+    appMessages: boolean;
+
+    appUpdates: boolean;
+
+}
 // Supporting Patient interface for consistency (used in GET /patients)
 export interface Patient {
     id: string;
@@ -253,4 +282,21 @@ export interface SearchDoctorsRequest {
 export interface DoctorAvailability {
     doctorId: string;
     availableDates: string[];
+}
+export interface Notification {
+    id: string;
+    message: string;
+    isRead: boolean;
+    isArchived: boolean; // Added missing field
+    type: "APPOINTMENT" | "MESSAGE" | "REMINDER" | "SYSTEM" | "NEW_TYPE"; // Added missing field
+    priority: "LOW" | "MEDIUM" | "HIGH"; // Added missing field
+    metadata?: Record<string, any>; // Added missing field (optional)
+    createdAt: string;
+    recipient: {
+        id: string;
+        email: string;
+        firstName?: string;
+        lastName?: string;
+        role: UserRole;
+    };
 }

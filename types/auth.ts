@@ -12,6 +12,7 @@ export interface UserProfile {
     updatedAt: string;
     banned: boolean;
     gender?: string;
+    image?: string;
     licenseNumber?: string;
     street?: string;
     city?: string;
@@ -40,7 +41,39 @@ export interface UserProfile {
         sms: { appointments: boolean; messages: boolean; reminders: boolean; system: boolean };
     };
 }
-
+export interface SetUserProfile {
+    email: string;
+    createdAt: string;
+    updatedAt: string;
+    gender?: string;
+    image?: string;
+    licenseNumber?: string;
+    street?: string;
+    city?: string;
+    zipCode?: string;
+    country?: string;
+    googleTokens?: { access_token: string; refresh_token: string; expiry_date: number };
+    specialty?: string;
+    skills?: string[];
+    role: UserRole;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    address?: string;
+    password?: string;
+    emergencyContact?: string;
+    bloodType?: string;
+    allergies?: string;
+    medicalConditions?: string;
+    bio?: string;
+    education?: string;
+    experience?: string;
+    notificationSettings?: {
+        email: { appointments: boolean; messages: boolean; reminders: boolean; system: boolean };
+        push: { appointments: boolean; messages: boolean; reminders: boolean; system: boolean };
+        sms: { appointments: boolean; messages: boolean; reminders: boolean; system: boolean };
+    };
+}
 export interface Doctor extends UserProfile {
     bio: string; // Required for doctors
     education: string;

@@ -55,8 +55,13 @@ export const authApi = {
 
 export const protectedApi = {
     getProfile: () => api.get<UserProfile>('/users/me').then((res) => res.data),
-    updateProfile: (data: Partial<UserProfile>) =>
-        api.put<UserProfile>(`/users/${useAuthStore.getState().userId}`, data).then((res) => res.data),
+    updateProfile: (data: Partial<UserProfile>) => {
+        const userId = useAuthStore.getState().userId;
+        console.log('Sending update request to:', `/users/${userId}`, 'with data:', data);
+        return api.put<UserProfile>(`/users/${userId}`, data).then((res) => res.data);
+    },
+    changePassword: (data: { currentPassword: string; newPassword: string }) =>
+        api.post('/users/change-password', data).then((res) => res.data),
 };
 
 export const appointmentApi = {

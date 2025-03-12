@@ -1,19 +1,18 @@
-// app/doctor/[id]/page.tsx
 "use client"
 
 import { useState, useEffect } from "react"
 import { useRouter, useParams, useSearchParams } from "next/navigation"
+import Image from "next/image"
 import { ChevronDown, ChevronLeft, ChevronUp, Video, Check } from "lucide-react"
 import { useAuthStore } from "@/stores/auth"
-import { appointmentApi, doctorsApi } from "@/lib/api"
-
-import { Doctor, Availability, Appointment } from "@/types/auth"
+import { doctorsApi, appointmentApi } from "@/lib/api"
+import { UserProfile, Availability, Appointment } from "@/types/auth"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { toast } from "@/components/ui/use-toast"
 
 export default function DoctorProfilePage() {
-    const [doctor, setDoctor] = useState<Doctor | null>(null)
+    const [doctor, setDoctor] = useState<UserProfile | null>(null)
     const [availability, setAvailability] = useState<Record<string, Availability[]>>({})
     const [selectedSlot, setSelectedSlot] = useState<string>("")
     const [expandedDay, setExpandedDay] = useState<string | null>(null)
@@ -28,23 +27,14 @@ export default function DoctorProfilePage() {
     useEffect(() => {
         if (!token || role !== "PATIENT") {
             clearAuth()
-            router.push("/users/login")
+            router.push("/login")
             return
         }
 
         const fetchData = async () => {
             try {
                 setLoading(true)
-
-                // Enhanced debugging
-                console.log("doctorsApi:", doctorsApi)
-                console.log("doctorsApi methods:", Object.keys(doctorsApi))
-                if (typeof doctorsApi.getDoctorDetails !== "function") {
-                    throw new Error("doctorsApi.getDoctorDetails is not a function. Check import or module resolution.")
-                }
-
                 const profile = await doctorsApi.getDoctorDetails(doctorId)
-                console.log("Fetched doctor profile:", profile)
                 if (!profile) throw new Error("Doctor not found")
                 setDoctor(profile)
 
@@ -69,7 +59,7 @@ export default function DoctorProfilePage() {
 
                 setAvailability(groupedSlots)
             } catch (error: any) {
-                console.error("Failed to fetch data:", error.message || error)
+                console.error("Failed to fetch data:", error.response?.data || error.message)
                 toast({ title: "Error", description: "Failed to load doctor profile.", variant: "destructive" })
                 router.push("/patient/dashboard")
             } finally {
@@ -80,59 +70,53 @@ export default function DoctorProfilePage() {
         fetchData()
     }, [token, userId, role, clearAuth, router, doctorId])
 
-    // Rest of the code remains unchanged...
     const handleBookOrReschedule = async () => {
         if (!selectedSlot || !doctor || !userId) {
             toast({
                 title: "Error",
                 description: "Please select a slot and ensure you’re logged in.",
                 variant: "destructive",
-            });
-            return;
+            })
+            return
         }
 
         try {
-            setLoading(true);
-
-            // Check if this is a reschedule
-            const rescheduleAppointmentId = searchParams.get("reschedule");
+            setLoading(true)
 
             if (rescheduleAppointmentId) {
-                // Delete the old appointment using the authenticated API client
-                await appointmentApi.deleteAppointment(rescheduleAppointmentId);
+                await appointmentApi.deleteAppointment(rescheduleAppointmentId)
                 toast({
                     title: "Success",
                     description: "Old appointment cancelled.",
-                });
+                })
             }
 
-            // Book the new appointment
             const appointment = await appointmentApi.book({
                 doctorId: doctor.id,
                 patientId: userId,
                 appointmentDate: selectedSlot,
                 duration: 15,
                 type: "Consultation",
-            });
+            })
 
             toast({
                 title: "Success",
                 description: `New appointment booked for ${new Date(appointment.appointmentDate).toLocaleString()}`,
-            });
+            })
 
-            setSelectedSlot("");
-            router.push("/patient/dashboard");
+            setSelectedSlot("")
+            router.push("/patient/dashboard")
         } catch (error: any) {
-            console.error("Failed to book/reschedule appointment:", error.response?.data || error.message);
+            console.error("Failed to book/reschedule appointment:", error.response?.data || error.message)
             toast({
                 title: "Error",
                 description: error.response?.data?.message || "Failed to book/reschedule appointment.",
                 variant: "destructive",
-            });
+            })
         } finally {
-            setLoading(false);
+            setLoading(false)
         }
-    };
+    }
 
     const toggleDay = (day: string) => {
         setExpandedDay(expandedDay === day ? null : day)
@@ -244,11 +228,13 @@ export default function DoctorProfilePage() {
                 </div>
 
                 <h3 className="text-lg font-bold mb-4 text-gray-800">Votre rendez-vous en détail</h3>
-
+                <h2 className="font-bold text-gray-800">
+                    Dr. {doctor.firstName} {doctor.lastName}
+                </h2>
                 <div className="space-y-4">
                     <div className="flex">
                         <Check className="h-5 w-5 text-gray-500 mr-2 flex-shrink-0 mt-0.5" />
-                        <p className="text-gray-700">{doctor.address || "Adresse non spécifiée"}</p>
+                        <p className="text-gray-700">{doctor.lastName || "Adresse non spécifiée"}</p>
                     </div>
                     <div className="flex">
                         <Check className="h-5 w-5 text-gray-500 mr-2 flex-shrink-0 mt-0.5" />

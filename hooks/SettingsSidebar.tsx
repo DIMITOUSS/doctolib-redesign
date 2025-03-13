@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { User, Bell, Shield, CreditCard, Globe, HelpCircle } from "lucide-react";
+import { User, Bell, Shield, CreditCard, Globe, HelpCircle, AtomIcon, WholeWordIcon } from "lucide-react";
 
 interface SettingsSidebarProps {
     activeTab: string;
@@ -15,6 +15,8 @@ export function SettingsSidebar({ activeTab, onTabChange }: SettingsSidebarProps
         { id: "billing", label: "Billing", icon: CreditCard },
         { id: "language", label: "Language", icon: Globe },
         { id: "help", label: "Help & Support", icon: HelpCircle },
+        { id: "account", label: "Account", icon: AtomIcon },
+        { id: "privacy", label: "Privacy", icon: WholeWordIcon },
     ];
 
     return (

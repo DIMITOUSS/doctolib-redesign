@@ -56,14 +56,24 @@ export const authApi = {
 };
 
 export const protectedApi = {
-    getProfile: () => api.get<UserProfile>('/users/me').then((res) => res.data),
-    updateProfile: (data: Partial<UserProfile>) => {
-        const userId = useAuthStore.getState().userId;
-        console.log('Sending update request to:', `/users/${userId}`, 'with data:', data);
-        return api.put<UserProfile>(`/users/${userId}`, data).then((res) => res.data);
-    },
+    getProfile: () =>
+        api.get<UserProfile>('/users/me', {
+            headers: { Authorization: `Bearer ${useAuthStore.getState().token}` },
+        }).then((res) => res.data), updateProfile: (data: Partial<UserProfile>) => {
+            const userId = useAuthStore.getState().userId;
+            console.log('Sending update request to:', `/users/${userId}`, 'with data:', data);
+            return api.put<UserProfile>(`/users/${userId}`, data).then((res) => res.data);
+        },
     changePassword: (data: { currentPassword: string; newPassword: string }) =>
         api.post('/auth/change-password', data).then((res) => res.data), // Updated path
+    deleteAccount: () => api.delete('/users/me').then(() => true), // Simple success response
+    enable2FA: (method: 'email' | 'sms') => api.post('/auth/2fa/enable', { method }).then((res) => res.data),
+    verify2FA: (code: string) => api.post('/auth/2fa/verify', { code }).then((res) => res.data),
+    getSessions: () => api.get<{ sessions: { id: string; createdAt: string }[] }>('/auth/sessions').then((res) => res.data.sessions),
+    logoutSession: (sessionId: string) => api.delete(`/auth/sessions/${sessionId}`).then(() => true),
+    updatePrivacy: (data: { visibility: 'public' | 'private' | 'doctors' }) =>
+        api.put('/users/me/privacy', data).then((res) => res.data),
+
 };
 
 export const appointmentApi = {

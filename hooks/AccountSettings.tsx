@@ -23,6 +23,7 @@ export function AccountSettings() {
             router.push("/auth/login");
         } catch (err: any) {
             setError(err.response?.data?.message || "Failed to delete account");
+
         }
     };
 

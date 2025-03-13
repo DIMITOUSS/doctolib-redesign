@@ -26,17 +26,18 @@ export default function LoginPage() {
 
   const setAuth = useAuthStore((state) => state.setAuth)
 
-  const handleLogin = async (e: React.FormEvent) => {
+  // app/auth/login/page.tsx
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
     try {
       const data = await authApi.login({ email, password });
-      setAuth(data.accessToken, data.role, data.id); // Use flat fields
-      console.log("User role:", data.role);
+      setAuth(data.accessToken, data.user.role, data.user.id); // Access nested user.role and user.id
+      console.log("User role:", data.user.role);
 
-      switch (data.role) {
+      switch (data.user.role) { // Update switch to use data.user.role
         case "DOCTOR":
           router.push("/doctor/dashboard");
           break;
@@ -47,7 +48,7 @@ export default function LoginPage() {
           router.push("/admin/dashboard");
           break;
         default:
-          console.error("Unknown role:", data.role);
+          console.error("Unknown role:", data.user.role);
           setError("Unauthorized role.");
       }
     } catch (err: any) {
@@ -55,7 +56,7 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
 
   return (

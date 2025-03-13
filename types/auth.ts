@@ -11,6 +11,7 @@ export interface UserProfile {
     createdAt: string;
     updatedAt: string;
     banned: boolean;
+    twoFactorEnabled: boolean;
     gender?: string;
     image?: string;
     licenseNumber?: string;
@@ -40,6 +41,7 @@ export interface UserProfile {
         push: { appointments: boolean; messages: boolean; reminders: boolean; system: boolean };
         sms: { appointments: boolean; messages: boolean; reminders: boolean; system: boolean };
     };
+    visibility?: 'public' | 'private' | 'doctors'; // Add this line
 }
 export interface SetUserProfile {
     email: string;

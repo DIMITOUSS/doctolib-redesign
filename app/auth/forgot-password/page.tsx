@@ -1,40 +1,56 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { AnimatedContainer } from "@/components/ui/animated-container"
-import { MainNav } from "@/components/main-nav"
-import { Mail, ArrowLeft, CheckCircle } from "lucide-react"
+import type React from "react";
+import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { AnimatedContainer } from "@/components/ui/animated-container";
+import { MainNav } from "@/components/main-nav";
+import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
+import { authApi } from "@/lib/api"; // Import your API client
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      console.log("Sending forgot password request for email:", email);
+      // Make the real API call
+      const response = await authApi.forgotPassword({ email });
+      console.log("API response:", response);
 
-      // In a real app, you would send a password reset email
-      setIsSubmitted(true)
-    } catch (err) {
-      setError("An error occurred. Please try again.")
+      setIsSubmitted(true);
+    } catch (err: any) {
+      console.error("Forgot password error:", err);
+      // Handle Axios-specific errors
+      if (err.response) {
+        // Server responded with a status other than 2xx
+        const errorMessage = err.response.data?.message || "An error occurred. Please try again.";
+        setError(errorMessage);
+        console.log("Server response:", err.response.status, err.response.data);
+      } else if (err.request) {
+        // Request was made but no response received
+        setError("No response from server. Check your network connection.");
+        console.log("No response received:", err.request);
+      } else {
+        // Something else caused the error
+        setError("An unexpected error occurred.");
+        console.log("Error details:", err.message);
+      }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -63,7 +79,9 @@ export default function ForgotPasswordPage() {
             ) : (
               <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4">
-                  {error && <div className="p-3 text-sm bg-destructive/10 text-destructive rounded-md">{error}</div>}
+                  {error && (
+                    <div className="p-3 text-sm bg-destructive/10 text-destructive rounded-md">{error}</div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <div className="relative">
@@ -100,6 +118,5 @@ export default function ForgotPasswordPage() {
         </AnimatedContainer>
       </div>
     </div>
-  )
+  );
 }
-

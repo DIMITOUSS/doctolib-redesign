@@ -113,6 +113,12 @@ export interface LoginRequest {
 
 // 🔹 Interface for Login API Response
 export interface LoginResponse {
+    id: string;
+    email: string;
+    role: UserRole;
+    firstName?: string;
+    lastName?: string;
+    // ... other UserProfile fields ...
     accessToken: string;
     user: UserProfile;
 }

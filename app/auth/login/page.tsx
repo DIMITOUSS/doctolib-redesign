@@ -33,11 +33,10 @@ export default function LoginPage() {
 
     try {
       const data = await authApi.login({ email, password });
+      setAuth(data.accessToken, data.role, data.id); // Use flat fields
+      console.log("User role:", data.role);
 
-      setAuth(data.accessToken, data.user.role, data.user.id);
-      console.log("User role:", data.user.role);
-
-      switch (data.user.role) {
+      switch (data.role) {
         case "DOCTOR":
           router.push("/doctor/dashboard");
           break;
@@ -48,7 +47,7 @@ export default function LoginPage() {
           router.push("/admin/dashboard");
           break;
         default:
-          console.error("Unknown role:", data.user.role);
+          console.error("Unknown role:", data.role);
           setError("Unauthorized role.");
       }
     } catch (err: any) {

@@ -48,9 +48,11 @@ api.interceptors.response.use(
 
 export const authApi = {
     login: (data: LoginRequest) =>
-        api.post<LoginResponse>("/users/login", data).then((res) => res.data),
+        api.post<LoginResponse>("/auth/login", data).then((res) => res.data),
     register: (data: CreateUserDto) =>
         api.post<UserProfile>("/users/register", data).then((res) => res.data),
+    forgotPassword: (data: { email: string }) =>
+        api.post('/auth/forgot-password', data).then((res) => res.data),
 };
 
 export const protectedApi = {
@@ -61,7 +63,7 @@ export const protectedApi = {
         return api.put<UserProfile>(`/users/${userId}`, data).then((res) => res.data);
     },
     changePassword: (data: { currentPassword: string; newPassword: string }) =>
-        api.post('/users/change-password', data).then((res) => res.data),
+        api.post('/auth/change-password', data).then((res) => res.data), // Updated path
 };
 
 export const appointmentApi = {

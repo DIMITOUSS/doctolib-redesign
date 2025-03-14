@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Appointment } from "@/types/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -7,13 +8,20 @@ import { Button } from "@/components/ui/button";
 
 interface PatientListProps {
   doctorId: string;
-  appointments: { data: Appointment[] }; // ✅ Expecting `data` inside
+  appointments: { data: { data: Appointment[] } }; // Updated type to match structure
 }
 
 export function PatientList({ doctorId, appointments }: PatientListProps) {
-  const appointmentList = Array.isArray(appointments.data) ? appointments.data : []; // ✅ Extract `data` safely
+  const router = useRouter();
+
+  console.log("Raw appointments prop:", appointments);
+
+  // Extract the inner 'data' array
+  const appointmentList = Array.isArray(appointments.data.data) ? appointments.data.data : [];
+  console.log("Extracted appointmentList:", appointmentList);
 
   if (appointmentList.length === 0) {
+    console.warn("No appointments to display in PatientList - appointmentList is empty");
     return (
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold">Upcoming Appointments</h2>
@@ -21,6 +29,11 @@ export function PatientList({ doctorId, appointments }: PatientListProps) {
       </div>
     );
   }
+
+  const handleViewDetails = (appointmentId: string) => {
+    console.log("Navigating to appointment:", appointmentId);
+    router.push(`/appointments/${appointmentId}`);
+  };
 
   return (
     <div className="space-y-4">
@@ -44,7 +57,12 @@ export function PatientList({ doctorId, appointments }: PatientListProps) {
                 </p>
               </div>
             </div>
-            <Button variant="outline">View Details</Button>
+            <Button
+              variant="outline"
+              onClick={() => handleViewDetails(appointment.id)}
+            >
+              View Details
+            </Button>
           </CardContent>
         </Card>
       ))}

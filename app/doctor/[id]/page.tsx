@@ -70,6 +70,7 @@ export default function DoctorProfilePage() {
         fetchData()
     }, [token, userId, role, clearAuth, router, doctorId])
 
+
     const handleBookOrReschedule = async () => {
         if (!selectedSlot || !doctor || !userId) {
             toast({

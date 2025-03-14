@@ -29,6 +29,7 @@ export const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         const token = useAuthStore.getState().token;
+        console.log("Request to:", config.url, "with token:", token); // Log request
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -76,13 +77,15 @@ export const protectedApi = {
     logoutSession: (sessionId: string) => api.delete(`/auth/sessions/${sessionId}`).then(() => true),
     updatePrivacy: (data: { visibility: 'public' | 'private' | 'doctors' }) =>
         api.put('/users/me/privacy', data).then((res) => res.data),
-    disable2FA: () => axios.post('/auth/2fa/disable'),
+    disable2FA: () => api.post('/auth/2fa/disable'),
 
 };
 
 export const appointmentApi = {
     book: (data: { doctorId: string; patientId: string; appointmentDate: string; duration: number; type: string }) =>
+
         api.post<Appointment>('/appointments', data).then((res) => res.data),
+
     getPatientAppointments: () =>
         api.get<Appointment[]>('/patients/appointments').then((res) => res.data),
     getDoctorAppointments: (doctorId: string) =>
@@ -126,15 +129,19 @@ export const doctorsApi = {
         api.get<Doctor[]>('/doctors/autocomplete', { params: { term, field } }).then((res) => res.data),
     getDoctorDetails: (doctorId: string) =>
         api.get<Doctor>(`/doctors/${doctorId}`).then((res) => res.data),
-    getUpcomingAppointments: (doctorId: string) => // Fix: Use api instead of protectedApi
+    getUpcomingAppointments: (doctorId: string) =>
         api.get<Appointment[]>(`/doctors/${doctorId}/upcoming-appointments`).then((res) => res.data),
-    getSpecialties: () => api.get<string[]>('/doctors/specialties').then(res => res.data),
-    getCities: () => api.get<string[]>('/doctors/cities').then(res => res.data),
+    getSpecialties: () =>
+        api.get<string[]>('/doctors/specialties').then((res) => res.data),
+    getCities: () =>
+        api.get<string[]>('/doctors/cities').then((res) => res.data),
 };
 
 export const patientsApi = {
     getPatients: () =>
         api.get<Patient[]>('/patients').then((res) => res.data),
+    getPatientDetails: (patientId: string) => // New method
+        api.get<UserProfile>(`/patients/${patientId}`).then((res) => res.data), // Assumes backend endpoint exists
 };
 // Add this to lib/api.ts
 export const notificationApi = {

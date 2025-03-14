@@ -33,15 +33,23 @@ export default function DoctorDashboard() {
 
         try {
           const appts = await doctorsApi.getUpcomingAppointments(profile.id);
-          console.log("Appointments fetched:", appts);
+          console.log("Raw appointments fetched:", appts); // Log raw response
+          if (!appts || appts.length === 0) {
+            console.warn("No appointments returned from API");
+          }
           setAppointments(appts || []);
         } catch (error: any) {
-          console.log("Error fetching appointments:", error.response?.status, error.message);
-          if (error.response?.status === 404) setAppointments([]);
-          else throw error;
+          console.error("Error fetching appointments:", error.response?.status, error.response?.data || error.message);
+          if (error.response?.status === 404) {
+            console.warn("404: No upcoming appointments found");
+            setAppointments([]);
+          } else {
+            throw error;
+          }
         }
       } catch (err: any) {
         setError(err.response?.data?.message || "Failed to load dashboard data");
+        console.error("Dashboard error:", err);
         if (err.response?.status === 401) {
           clearAuth();
           window.location.href = "/auth/login";
@@ -63,6 +71,8 @@ export default function DoctorDashboard() {
       </div>
     );
 
+  console.log("Appointments passed to PatientList:", appointments); // Log before rendering
+
   return (
     <div className="flex min-h-screen flex-col">
       <MainNav />
@@ -78,9 +88,11 @@ export default function DoctorDashboard() {
           </TabsList>
           <TabsContent value="schedule">
             <ScheduleManagement doctorId={userId!} />
+
           </TabsContent>
+
           <TabsContent value="patients">
-            <PatientList doctorId={userId!} appointments={{ data: appointments }} />
+            <PatientList doctorId={userId!} appointments={{ data: { data: appointments } }} />
           </TabsContent>
           <TabsContent value="prescriptions">
             <PrescriptionSystem doctorId={userId!} />

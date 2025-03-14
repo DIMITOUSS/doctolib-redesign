@@ -1,96 +1,106 @@
-"use client"
+// components/AdvancedSearch.tsx
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
-import { Badge } from "@/components/ui/badge"
-import { Calendar } from "@/components/ui/calendar"
-import { format } from "date-fns"
-import { Filter, MapPin, X, CalendarIcon, Clock } from "lucide-react"
-import { doctorsApi } from "@/lib/api"
-import { Doctor, PaginatedDoctorsResponse } from "@/types/auth"
-import { AutocompleteInput } from "@/components/autocomplete-input"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { Filter, MapPin, X, CalendarIcon, Clock } from "lucide-react";
+import { doctorsApi } from "@/lib/api";
+import { Doctor, PaginatedDoctorsResponse } from "@/types/auth";
+import { AutocompleteInput } from "@/components/autocomplete-input";
 
 export function AdvancedSearch() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedSpecialty, setSelectedSpecialty] = useState("")
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
-  const [selectedLocation, setSelectedLocation] = useState("")
-  const [maxDistance, setMaxDistance] = useState([10])
-  const [availabilityFilter, setAvailabilityFilter] = useState(false)
-  const [telehealthFilter, setTelehealthFilter] = useState(false)
-  const [insuranceFilter, setInsuranceFilter] = useState(false)
-  const [genderFilter, setGenderFilter] = useState("")
-  const [languageFilter, setLanguageFilter] = useState("")
-  const [activeFilters, setActiveFilters] = useState<string[]>([])
-  const [searchResults, setSearchResults] = useState<Doctor[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSpecialty, setSelectedSpecialty] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [maxDistance, setMaxDistance] = useState([10]);
+  const [availabilityFilter, setAvailabilityFilter] = useState(false);
+  const [telehealthFilter, setTelehealthFilter] = useState(false);
+  const [insuranceFilter, setInsuranceFilter] = useState(false);
+  const [genderFilter, setGenderFilter] = useState("");
+  const [languageFilter, setLanguageFilter] = useState("");
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [searchResults, setSearchResults] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [specialties, setSpecialties] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
 
-  const specialties = [
-    "Cardiology",
-    "Dermatology",
-    "Neurology",
-    "Pediatrics",
-    "General Medicine",
-    "Orthopedics",
-    "Ophthalmology",
-    "Gynecology",
-    "Dentistry",
-    "Psychiatry",
-  ]
-  const locations = ["Algiers", "Oran", "Constantine", "Annaba", "Blida"]
-  const languages = ["Arabic", "French", "English", "Berber", "Spanish"]
+  // Fetch specialties and cities on mount
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const [specialtiesData, citiesData] = await Promise.all([
+          doctorsApi.getSpecialties(),
+          doctorsApi.getCities(),
+        ]);
+        console.log("Fetched specialties:", specialtiesData);
+        console.log("Fetched cities:", citiesData);
+        setSpecialties(specialtiesData);
+        setCities(citiesData);
+      } catch (err) {
+        console.error("Error fetching filter options:", err);
+        setError("Failed to load filter options");
+      }
+    };
+    fetchFilterOptions();
+  }, []);
 
   const handleAddFilter = (filterName: string, value: string) => {
-    const filterKey = `${filterName}: ${value}`
+    const filterKey = `${filterName}: ${value}`;
     if (!activeFilters.includes(filterKey)) {
-      setActiveFilters([...activeFilters, filterKey])
+      setActiveFilters([...activeFilters, filterKey]);
     }
-  }
+  };
 
   const handleRemoveFilter = (filter: string) => {
-    setActiveFilters(activeFilters.filter((f) => f !== filter))
-  }
+    setActiveFilters(activeFilters.filter((f) => f !== filter));
+  };
 
   const clearAllFilters = () => {
-    setSearchQuery("")
-    setSelectedSpecialty("")
-    setSelectedDate(undefined)
-    setSelectedLocation("")
-    setMaxDistance([10])
-    setAvailabilityFilter(false)
-    setTelehealthFilter(false)
-    setInsuranceFilter(false)
-    setGenderFilter("")
-    setLanguageFilter("")
-    setActiveFilters([])
-    setSearchResults([])
-  }
+    setSearchQuery("");
+    setSelectedSpecialty("");
+    setSelectedDate(undefined);
+    setSelectedLocation("");
+    setMaxDistance([10]);
+    setAvailabilityFilter(false);
+    setTelehealthFilter(false);
+    setInsuranceFilter(false);
+    setGenderFilter("");
+    setLanguageFilter("");
+    setActiveFilters([]);
+    setSearchResults([]);
+  };
 
   const handleSearch = async () => {
     try {
-      setLoading(true)
-      setError(null)
-      const response: PaginatedDoctorsResponse = await doctorsApi.search({
+      setLoading(true);
+      setError(null);
+      const params = {
         name: searchQuery || undefined,
         specialty: selectedSpecialty || undefined,
         location: selectedLocation || undefined,
-      })
-      console.log("Search results:", response)
-      setSearchResults(response.doctors)
+      };
+      console.log("Search params sent:", params); // Log params before API call
+      const response: PaginatedDoctorsResponse = await doctorsApi.search(params);
+      console.log("Search results:", response);
+      setSearchResults(response.doctors);
     } catch (err: any) {
-      console.error("Search error:", err)
-      setError(err.response?.data?.message || "Failed to search doctors")
+      console.error("Search error:", err);
+      setError(err.response?.data?.message || "Failed to search doctors");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="container mx-auto py-6">
@@ -122,8 +132,8 @@ export function AdvancedSearch() {
                       <Select
                         value={selectedSpecialty}
                         onValueChange={(value) => {
-                          setSelectedSpecialty(value)
-                          handleAddFilter("Specialty", value)
+                          setSelectedSpecialty(value);
+                          handleAddFilter("Specialty", value);
                         }}
                       >
                         <SelectTrigger>
@@ -153,8 +163,8 @@ export function AdvancedSearch() {
                             mode="single"
                             selected={selectedDate}
                             onSelect={(date) => {
-                              setSelectedDate(date)
-                              if (date) handleAddFilter("Date", format(date, "PPP"))
+                              setSelectedDate(date);
+                              if (date) handleAddFilter("Date", format(date, "PPP"));
                             }}
                             initialFocus
                           />
@@ -167,17 +177,17 @@ export function AdvancedSearch() {
                       <Select
                         value={selectedLocation}
                         onValueChange={(value) => {
-                          setSelectedLocation(value)
-                          handleAddFilter("Location", value)
+                          setSelectedLocation(value);
+                          handleAddFilter("Location", value);
                         }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select location" />
                         </SelectTrigger>
                         <SelectContent>
-                          {locations.map((location) => (
-                            <SelectItem key={location} value={location}>
-                              {location}
+                          {cities.map((city) => (
+                            <SelectItem key={city} value={city}>
+                              {city}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -195,8 +205,8 @@ export function AdvancedSearch() {
                         step={1}
                         value={maxDistance}
                         onValueChange={(value) => {
-                          setMaxDistance(value)
-                          handleAddFilter("Max Distance", `${value[0]} km`)
+                          setMaxDistance(value);
+                          handleAddFilter("Max Distance", `${value[0]} km`);
                         }}
                       />
                     </div>
@@ -208,9 +218,9 @@ export function AdvancedSearch() {
                           id="available-today"
                           checked={availabilityFilter}
                           onCheckedChange={(checked) => {
-                            setAvailabilityFilter(!!checked)
-                            if (checked) handleAddFilter("Availability", "Today")
-                            else handleRemoveFilter("Availability: Today")
+                            setAvailabilityFilter(!!checked);
+                            if (checked) handleAddFilter("Availability", "Today");
+                            else handleRemoveFilter("Availability: Today");
                           }}
                         />
                         <Label htmlFor="available-today">Available today</Label>
@@ -224,9 +234,9 @@ export function AdvancedSearch() {
                           id="telehealth"
                           checked={telehealthFilter}
                           onCheckedChange={(checked) => {
-                            setTelehealthFilter(!!checked)
-                            if (checked) handleAddFilter("Consultation", "Telehealth")
-                            else handleRemoveFilter("Consultation: Telehealth")
+                            setTelehealthFilter(!!checked);
+                            if (checked) handleAddFilter("Consultation", "Telehealth");
+                            else handleRemoveFilter("Consultation: Telehealth");
                           }}
                         />
                         <Label htmlFor="telehealth">Telehealth available</Label>
@@ -240,9 +250,9 @@ export function AdvancedSearch() {
                           id="accepts-insurance"
                           checked={insuranceFilter}
                           onCheckedChange={(checked) => {
-                            setInsuranceFilter(!!checked)
-                            if (checked) handleAddFilter("Insurance", "Accepted")
-                            else handleRemoveFilter("Insurance: Accepted")
+                            setInsuranceFilter(!!checked);
+                            if (checked) handleAddFilter("Insurance", "Accepted");
+                            else handleRemoveFilter("Insurance: Accepted");
                           }}
                         />
                         <Label htmlFor="accepts-insurance">Accepts insurance</Label>
@@ -254,8 +264,8 @@ export function AdvancedSearch() {
                       <Select
                         value={genderFilter}
                         onValueChange={(value) => {
-                          setGenderFilter(value)
-                          handleAddFilter("Gender", value)
+                          setGenderFilter(value);
+                          handleAddFilter("Gender", value);
                         }}
                       >
                         <SelectTrigger>
@@ -273,15 +283,15 @@ export function AdvancedSearch() {
                       <Select
                         value={languageFilter}
                         onValueChange={(value) => {
-                          setLanguageFilter(value)
-                          handleAddFilter("Language", value)
+                          setLanguageFilter(value);
+                          handleAddFilter("Language", value);
                         }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select language" />
                         </SelectTrigger>
                         <SelectContent>
-                          {languages.map((language) => (
+                          {["Arabic", "French", "English", "Berber", "Spanish"].map((language) => (
                             <SelectItem key={language} value={language}>
                               {language}
                             </SelectItem>
@@ -340,7 +350,7 @@ export function AdvancedSearch() {
                   <div className="flex items-start space-x-4">
                     <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
                       <span className="text-xl font-bold text-primary">
-                        {doctor.firstName[0]}{doctor.lastName[0]}
+                        {doctor.firstName?.[0] || "N"}{doctor.lastName?.[0] || "A"}
                       </span>
                     </div>
                     <div className="space-y-1">
@@ -362,5 +372,5 @@ export function AdvancedSearch() {
         </div>
       )}
     </div>
-  )
+  );
 }

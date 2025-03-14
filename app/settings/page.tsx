@@ -1,7 +1,7 @@
-import { SettingsPages } from "@/components/settings/settings-pages"
 import { MainNav } from "@/components/main-nav"
+import { SettingsPages } from "@/hooks/SettingsPages"
 
-export default function SettingsPage() {
+export default function SettingPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <MainNav />

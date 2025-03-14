@@ -86,6 +86,7 @@ export interface Doctor extends UserProfile {
     image?: string; // Added for profile picture
     availableToday?: boolean; // Added for availability filter
 }
+
 // In src/types/auth.ts
 export interface BookAppointmentRequest {
     doctorId: string;
@@ -114,15 +115,31 @@ export interface LoginRequest {
 }
 
 // 🔹 Interface for Login API Response
-export interface LoginResponse {
-    id: string;
-    email: string;
-    role: UserRole;
-    firstName?: string;
-    lastName?: string;
-    // ... other UserProfile fields ...
+export interface LoginSuccessResponse {
     accessToken: string;
+    refreshToken: string;
     user: UserProfile;
+    message: string; // e.g., "Login successful"
+}
+
+export interface Login2FAResponse {
+    tempToken: string;
+    message: string; // e.g., "2FA required"
+}
+
+export type LoginResponse = LoginSuccessResponse | Login2FAResponse;
+
+// Add Login2FAResponse for /auth/2fa/login (since it returns full tokens)
+export interface Login2FASuccessResponse {
+    accessToken: string;
+    refreshToken: string;
+    user: UserProfile;
+}
+
+// Keep other interfaces unchanged (for brevity)
+export interface LoginRequest {
+    email: string;
+    password: string;
 }
 
 // 🔹 Interface for Protected User Profile Response
@@ -248,9 +265,10 @@ export interface PaginatedDoctorsResponse {
     firstName: string;
     lastName: string;
     email: string;
-    specialty?: string;
-    city?: string; // Adjust based on backend (e.g., could be `location`)
     image?: string;
+    specialties: string[];
+    cities: string[];
+
 
 }
 

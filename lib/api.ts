@@ -15,7 +15,8 @@ import {
     Doctor,
     PaginatedDoctorsResponse,
     CreateUserDto,
-    NotificationPreference
+    NotificationPreference,
+    Login2FASuccessResponse
 } from '@/types/auth';
 
 export const api = axios.create({
@@ -53,6 +54,8 @@ export const authApi = {
         api.post<UserProfile>("/users/register", data).then((res) => res.data),
     forgotPassword: (data: { email: string }) =>
         api.post('/auth/forgot-password', data).then((res) => res.data),
+    loginWith2FA: (tempToken: string, code: string): Promise<Login2FASuccessResponse> =>
+        api.post("/auth/2fa/login", { tempToken, code }).then((res) => res.data), // Fixed to use `api`
 };
 
 export const protectedApi = {
@@ -73,6 +76,7 @@ export const protectedApi = {
     logoutSession: (sessionId: string) => api.delete(`/auth/sessions/${sessionId}`).then(() => true),
     updatePrivacy: (data: { visibility: 'public' | 'private' | 'doctors' }) =>
         api.put('/users/me/privacy', data).then((res) => res.data),
+    disable2FA: () => axios.post('/auth/2fa/disable'),
 
 };
 
@@ -124,6 +128,8 @@ export const doctorsApi = {
         api.get<Doctor>(`/doctors/${doctorId}`).then((res) => res.data),
     getUpcomingAppointments: (doctorId: string) => // Fix: Use api instead of protectedApi
         api.get<Appointment[]>(`/doctors/${doctorId}/upcoming-appointments`).then((res) => res.data),
+    getSpecialties: () => api.get<string[]>('/doctors/specialties').then(res => res.data),
+    getCities: () => api.get<string[]>('/doctors/cities').then(res => res.data),
 };
 
 export const patientsApi = {

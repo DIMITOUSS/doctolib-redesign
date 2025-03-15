@@ -9,6 +9,7 @@ export interface UserProfile {
     id: string;
     email: string;
     createdAt: string;
+    missedAppointments: number;
     updatedAt: string;
     banned: boolean;
     twoFactorEnabled: boolean;
@@ -44,6 +45,7 @@ export interface UserProfile {
     visibility?: 'public' | 'private' | 'doctors'; // Add this line
 }
 export interface SetUserProfile {
+
     email: string;
     createdAt: string;
     updatedAt: string;
@@ -79,12 +81,14 @@ export interface SetUserProfile {
 export interface Doctor extends UserProfile {
     bio: string; // Required for doctors
     education: string;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED'; // Added
     experience: string;
     specialty: string; // Required for doctors
     licenseNumber: string; // 
     // Required for doctors
     image?: string; // Added for profile picture
     availableToday?: boolean; // Added for availability filter
+
 }
 
 // In src/types/auth.ts
@@ -161,6 +165,7 @@ export interface Appointment {
     type: string; // Added from backend adjustment (e.g., "Check-up", "Consultation")
     notes: string   // From User entity
 
+
     patient: { // Full patient object from relations: ['patient']
         id: string;
         email: string;
@@ -169,6 +174,8 @@ export interface Appointment {
         createdAt: string; // Assuming TypeORM adds these
         updatedAt: string; // Assuming TypeORM adds these
         banned: boolean;
+        missedAppointments: number;
+
     };
     doctor: { // Minimal doctor info from relations: ['doctor']
         id: string;

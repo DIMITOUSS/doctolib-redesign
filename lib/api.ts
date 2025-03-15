@@ -111,6 +111,7 @@ export const medicalRecordsApi = {
 };
 
 export const doctorsApi = {
+
     markSlotsAsUnavailable: (doctorId: string, startTime: string, endTime: string) =>
         api.patch(`/availability/doctor/${doctorId}/unavailable`, { startTime, endTime }).then((res) => res.data),
     deleteAllAvailability: (doctorId: string) =>
@@ -150,5 +151,26 @@ export const notificationApi = {
     updatePreferences: (userId: string, preferences: Partial<NotificationPreference>) =>
         api.put(`/notification-preferences/${userId}`, preferences).then((res) => res.data),
 };
-
+export const adminApi = {
+    getPendingDoctors: (page: number = 1, limit: number = 10) =>
+        api.get<{ doctors: Doctor[]; total: number }>('/admins/doctors/pending', { params: { page, limit } }).then(res => res.data),
+    updateDoctorStatus: (doctorId: string, status: 'APPROVED' | 'REJECTED') =>
+        api.patch<Doctor>(`/admins/doctors/${doctorId}/status`, { status }).then(res => res.data),
+    getUsers: (
+        page: number = 1,
+        limit: number = 10,
+        role?: string,
+        banned?: boolean,
+        filter?: { id?: string }
+    ) =>
+        api.get<{ users: UserProfile[]; total: number }>('/admins/users', {
+            params: { page, limit, role, banned, ...filter },
+        }).then(res => res.data),
+    banUser: (userId: string) =>
+        api.patch<UserProfile>(`/admins/users/${userId}/ban`).then(res => res.data),
+    unbanUser: (userId: string) =>
+        api.patch<UserProfile>(`/admins/users/${userId}/unban`).then(res => res.data),
+    deleteUser: (userId: string) =>
+        api.delete(`/admins/users/${userId}`).then(() => true),
+};
 export default api;

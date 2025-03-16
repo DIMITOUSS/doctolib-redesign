@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import { useAuthStore } from "@/stores/auth";
 import { protectedApi, doctorsApi } from "@/lib/api";
 import { UserProfile, Appointment } from "@/types/auth";
-import { ScheduleManagement } from "@/components/doctor/schedule-management";
-import { PatientList } from "@/components/doctor/patient-list";
-import { PrescriptionSystem } from "@/components/doctor/prescription-system";
+import { PatientList } from "@/components/doctor/patient-list"; // Fixed to named import
+import BannedPatientsList from "@/components/doctor/banned-patients-list"; // Default, correct
 import { MainNav } from "@/components/main-nav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScheduleManagement } from "@/components/doctor/schedule-management";
+import { PrescriptionSystem } from "@/components/doctor/prescription-system";
 
 export default function DoctorDashboard() {
   const { userId, token, role, clearAuth } = useAuthStore();
@@ -67,10 +68,11 @@ export default function DoctorDashboard() {
         <h1 className="text-4xl font-bold mb-6">
           Welcome, Dr. {doctorProfile.firstName} {doctorProfile.lastName}
         </h1>
-        <Tabs defaultValue="schedule" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+        <Tabs defaultValue="patients" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="schedule">Schedule</TabsTrigger>
             <TabsTrigger value="patients">Patients</TabsTrigger>
+            <TabsTrigger value="banned">Banned Patients</TabsTrigger>
             <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
           </TabsList>
           <TabsContent value="schedule">
@@ -78,6 +80,9 @@ export default function DoctorDashboard() {
           </TabsContent>
           <TabsContent value="patients">
             <PatientList doctorId={userId!} appointments={appointments} />
+          </TabsContent>
+          <TabsContent value="banned">
+            <BannedPatientsList doctorId={userId!} />
           </TabsContent>
           <TabsContent value="prescriptions">
             <PrescriptionSystem doctorId={userId!} />

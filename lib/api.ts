@@ -17,7 +17,8 @@ import {
     CreateUserDto,
     NotificationPreference,
     Login2FASuccessResponse,
-    AppNotification
+    AppNotification,
+    BannedPatient
 } from '@/types/auth';
 
 export const api = axios.create({
@@ -84,10 +85,16 @@ export const protectedApi = {
 
 // src/lib/api.ts (only the appointmentApi section updated)
 export const appointmentApi = {
+    unbanPatient: (doctorId: string, patientId: string) =>
+        api.patch<void>(`/appointments/doctors/${doctorId}/patients/${patientId}/unban`).then((res) => res.data),
+    confirmAppointment: (appointmentId: string) =>
+        api.patch<Appointment>(`/appointments/${appointmentId}/confirm`).then((res) => res.data),
+    markAsMissed: (appointmentId: string) =>
+        api.patch<Appointment>(`/appointments/${appointmentId}/miss`).then((res) => res.data),
+    getMissedCount: (doctorId: string, patientId: string) =>
+        api.get<{ missedCount: number }>(`/appointments/doctors/${doctorId}/patients/${patientId}/missed-count`).then((res) => res.data.missedCount),
     rejectAppointment: (appointmentId: string) =>
         api.patch<Appointment>(`/appointments/${appointmentId}/reject`).then((res) => res.data),
-    confirmAppointment: (appointmentId: string) => // Added
-        api.patch<Appointment>(`/appointments/${appointmentId}/confirm`).then((res) => res.data),
     book: (data: { doctorId: string; patientId: string; appointmentDate: string; duration: number; type: string }) =>
         api.post<Appointment>('/appointments', data).then((res) => res.data),
     getPatientAppointments: (filters: { status?: string; startDate?: string; endDate?: string; page?: number; limit?: number } = {}) =>
@@ -100,6 +107,8 @@ export const appointmentApi = {
         api.put<Appointment>(`/appointments/${id}`, data).then((res) => res.data),
     getById: (appointmentId: string) =>
         api.get<{ data: Appointment }>(`/appointments/${appointmentId}`).then((res) => res.data.data),
+    getBannedPatients: (doctorId: string) =>
+        api.get<{ data: BannedPatient[] }>(`/appointments/doctors/${doctorId}/banned-patients`).then((res) => res.data.data),
 };
 
 export const medicalRecordsApi = {

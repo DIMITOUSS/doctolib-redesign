@@ -190,6 +190,17 @@ export interface Appointment {
     };
 }
 
+export interface BannedPatient {
+    id: string;
+    patient: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+    };
+    bannedAt: string;
+    reason: string;
+}
 export interface NotificationPreference {
     id: string;
     emailAppointments: boolean;

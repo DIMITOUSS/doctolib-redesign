@@ -1,260 +1,186 @@
-"use client"
+// src/components/patient/MedicalRecordsView.tsx
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
+import { medicalRecordsApi, appointmentApi, patientsApi } from '@/lib/api';
+import { MedicalRecord, Appointment } from '@/types/auth';
+import { useAuthStore } from '@/stores/auth';
+import jsPDF from 'jspdf';
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { FilePlus, Pill, Activity, Calendar, Download, Eye, Share2 } from "lucide-react"
+export default function MedicalRecordsView() {
+  const [records, setRecords] = useState<MedicalRecord[]>([]);
+  const [visits, setVisits] = useState<Appointment[]>([]);
+  const [medications, setMedications] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { userId } = useAuthStore(); // patientId from auth store
+  const { toast } = useToast();
 
-export function MedicalRecordsView() {
-  const [activeTab, setActiveTab] = useState("visits")
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!userId) {
+        setError('User not authenticated');
+        setIsLoading(false);
+        return;
+      }
 
-  // Mock data
-  const visits = [
-    {
-      id: 1,
-      date: "2023-10-15",
-      doctor: "Dr. Amina Benali",
-      specialty: "Cardiology",
-      reason: "Annual checkup",
-      notes: "Patient is in good health. Blood pressure is normal.",
-    },
-    {
-      id: 2,
-      date: "2023-08-22",
-      doctor: "Dr. Karim Mensouri",
-      specialty: "Dermatology",
-      reason: "Skin rash",
-      notes: "Prescribed topical cream for eczema. Follow up in 2 weeks.",
-    },
-    {
-      id: 3,
-      date: "2023-06-10",
-      doctor: "Dr. Leila Hadj",
-      specialty: "General Medicine",
-      reason: "Flu symptoms",
-      notes: "Diagnosed with seasonal flu. Rest and fluids recommended.",
-    },
-  ]
+      setIsLoading(true);
+      try {
+        const recordsData = await medicalRecordsApi.getPatientRecords(userId); // Pass userId
+        setRecords(recordsData);
 
-  const medications = [
-    {
-      id: 1,
-      name: "Amoxicillin",
-      dosage: "500mg",
-      frequency: "3 times daily",
-      startDate: "2023-06-10",
-      endDate: "2023-06-17",
-      prescribedBy: "Dr. Leila Hadj",
-    },
-    {
-      id: 2,
-      name: "Hydrocortisone Cream",
-      dosage: "Apply thin layer",
-      frequency: "Twice daily",
-      startDate: "2023-08-22",
-      endDate: "2023-09-05",
-      prescribedBy: "Dr. Karim Mensouri",
-    },
-    {
-      id: 3,
-      name: "Vitamin D",
-      dosage: "1000 IU",
-      frequency: "Once daily",
-      startDate: "2023-10-15",
-      endDate: "Ongoing",
-      prescribedBy: "Dr. Amina Benali",
-    },
-  ]
+        const appointmentsData = await appointmentApi.getPatientAppointments();
+        const completedVisits = appointmentsData.appointments.filter(
+          (appt: Appointment) => appt.status === 'COMPLETED'
+        );
+        setVisits(completedVisits);
 
-  const tests = [
-    {
-      id: 1,
-      name: "Complete Blood Count",
-      date: "2023-10-15",
-      orderedBy: "Dr. Amina Benali",
-      results: "Normal",
-      notes: "All values within normal range",
-    },
-    {
-      id: 2,
-      name: "Skin Biopsy",
-      date: "2023-08-22",
-      orderedBy: "Dr. Karim Mensouri",
-      results: "Negative",
-      notes: "No abnormal cells detected",
-    },
-    {
-      id: 3,
-      name: "Chest X-Ray",
-      date: "2023-06-10",
-      orderedBy: "Dr. Leila Hadj",
-      results: "Normal",
-      notes: "No signs of infection or abnormalities",
-    },
-  ]
+        const meds = recordsData
+          .filter((record) => record.prescription)
+          .map((record) => record.prescription as string);
+        setMedications([...new Set(meds)]);
+      } catch (err) {
+        setError('Failed to load medical records.');
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch data.' });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [userId, toast]);
+
+  const handleRequestCorrection = async (recordId: string) => {
+    try {
+      toast({
+        title: 'Correction Requested',
+        description: 'Your request has been sent to the doctor.',
+      });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to request correction.' });
+    }
+  };
+
+  const exportRecords = () => {
+    const doc = new jsPDF();
+    doc.text('Medical Records', 10, 10);
+    let y = 20;
+    records.forEach((record, index) => {
+      doc.text(`Record ${index + 1}:`, 10, y);
+      doc.text(`Date: ${new Date(record.createdAt).toLocaleString()}`, 10, y + 10);
+      doc.text(`Diagnosis: ${record.diagnosis}`, 10, y + 20);
+      if (record.prescription) doc.text(`Prescription: ${record.prescription}`, 10, y + 30);
+      y += 40;
+    });
+    doc.save(`medical_records_${userId}.pdf`);
+  };
+
+  const shareWithDoctor = async (doctorId: string) => {
+    if (!userId) {
+      toast({ variant: 'destructive', title: 'Error', description: 'User not authenticated.' });
+      return;
+    }
+    try {
+      await patientsApi.grantConsent(userId, { doctorId });
+      toast({
+        title: 'Records Shared',
+        description: 'Records shared with the doctor successfully.',
+      });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to share records.' });
+    }
+  };
+
+  if (isLoading) return <div>Loading medical records...</div>;
+  if (error) return <div>{error} <Button onClick={() => window.location.reload()}>Retry</Button></div>;
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold mb-2">Medical Records</h2>
-        <p className="text-muted-foreground">Securely view and manage your medical history</p>
-      </div>
+    <Tabs defaultValue="visits" className="w-full">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="visits">Visits</TabsTrigger>
+        <TabsTrigger value="medications">Medications</TabsTrigger>
+        <TabsTrigger value="records">Records</TabsTrigger>
+      </TabsList>
 
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex space-x-2">
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Export Records
-          </Button>
-          <Button variant="outline" size="sm">
-            <Share2 className="mr-2 h-4 w-4" />
-            Share with Doctor
-          </Button>
-        </div>
-        <Button variant="outline" size="sm">
-          <FilePlus className="mr-2 h-4 w-4" />
-          Upload Document
-        </Button>
-      </div>
+      <TabsContent value="visits">
+        <Card>
+          <CardHeader><CardTitle>Past Visits</CardTitle></CardHeader>
+          <CardContent>
+            {visits.length > 0 ? (
+              visits.map((visit) => (
+                <div key={visit.id} className="mb-4 p-4 border rounded">
+                  <p><strong>Date:</strong> {new Date(visit.appointmentDate).toLocaleString()}</p>
+                  <p><strong>Doctor:</strong> {visit.doctor.firstName} {visit.doctor.lastName}</p>
+                  <p><strong>Type:</strong> {visit.type}</p>
+                </div>
+              ))
+            ) : (
+              <p>No past visits found.</p>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
 
-      <Tabs defaultValue="visits" className="w-full" onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 mb-8">
-          <TabsTrigger value="visits" className="flex items-center">
-            <Calendar className="mr-2 h-4 w-4" />
-            <span>Visits</span>
-          </TabsTrigger>
-          <TabsTrigger value="medications" className="flex items-center">
-            <Pill className="mr-2 h-4 w-4" />
-            <span>Medications</span>
-          </TabsTrigger>
-          <TabsTrigger value="tests" className="flex items-center">
-            <Activity className="mr-2 h-4 w-4" />
-            <span>Test Results</span>
-          </TabsTrigger>
-        </TabsList>
+      <TabsContent value="medications">
+        <Card>
+          <CardHeader><CardTitle>Medications</CardTitle></CardHeader>
+          <CardContent>
+            {medications.length > 0 ? (
+              <ul className="list-disc pl-5">
+                {medications.map((med, index) => (
+                  <li key={index}>{med}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>No medications recorded.</p>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
 
-        <TabsContent value="visits">
-          <Card>
-            <CardHeader>
-              <CardTitle>Visit History</CardTitle>
-              <CardDescription>A record of your past doctor visits and consultations</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Doctor</TableHead>
-                    <TableHead>Specialty</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visits.map((visit) => (
-                    <TableRow key={visit.id}>
-                      <TableCell>{visit.date}</TableCell>
-                      <TableCell>{visit.doctor}</TableCell>
-                      <TableCell>{visit.specialty}</TableCell>
-                      <TableCell>{visit.reason}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button variant="ghost" size="icon">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="medications">
-          <Card>
-            <CardHeader>
-              <CardTitle>Medications</CardTitle>
-              <CardDescription>Current and past medications prescribed to you</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Medication</TableHead>
-                    <TableHead>Dosage</TableHead>
-                    <TableHead>Frequency</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>End Date</TableHead>
-                    <TableHead>Prescribed By</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {medications.map((medication) => (
-                    <TableRow key={medication.id}>
-                      <TableCell>{medication.name}</TableCell>
-                      <TableCell>{medication.dosage}</TableCell>
-                      <TableCell>{medication.frequency}</TableCell>
-                      <TableCell>{medication.startDate}</TableCell>
-                      <TableCell>{medication.endDate}</TableCell>
-                      <TableCell>{medication.prescribedBy}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="tests">
-          <Card>
-            <CardHeader>
-              <CardTitle>Test Results</CardTitle>
-              <CardDescription>Results from your medical tests and lab work</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Test Name</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Ordered By</TableHead>
-                    <TableHead>Results</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tests.map((test) => (
-                    <TableRow key={test.id}>
-                      <TableCell>{test.name}</TableCell>
-                      <TableCell>{test.date}</TableCell>
-                      <TableCell>{test.orderedBy}</TableCell>
-                      <TableCell>{test.results}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button variant="ghost" size="icon">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
+      <TabsContent value="records">
+        <Card>
+          <CardHeader><CardTitle>Medical Records</CardTitle></CardHeader>
+          <CardContent>
+            {records.length > 0 ? (
+              records.map((record) => (
+                <div key={record.id} className="mb-4 p-4 border rounded">
+                  <p><strong>Date:</strong> {new Date(record.createdAt).toLocaleString()}</p>
+                  <p><strong>Diagnosis:</strong> {record.diagnosis}</p>
+                  {record.prescription && <p><strong>Prescription:</strong> {record.prescription}</p>}
+                  {record.medicalTests && <p><strong>Tests:</strong> {record.medicalTests}</p>}
+                  {record.notes && <p><strong>Notes:</strong> {record.notes}</p>}
+                  <Button
+                    variant="outline"
+                    className="mt-2"
+                    onClick={() => handleRequestCorrection(record.id)}
+                  >
+                    Request Correction
+                  </Button>
+                </div>
+              ))
+            ) : (
+              <p>No medical records found.</p>
+            )}
+            <div className="mt-4 flex gap-2">
+              <Button onClick={exportRecords}>Export Records</Button>
+              <select
+                onChange={(e) => shareWithDoctor(e.target.value)}
+                className="border p-2 rounded"
+                defaultValue=""
+              >
+                <option value="" disabled>Select Doctor to Share</option>
+                {visits.map((visit) => (
+                  <option key={visit.doctor.id} value={visit.doctor.id}>
+                    {visit.doctor.firstName} {visit.doctor.lastName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </Tabs>
+  );
 }
-

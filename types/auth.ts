@@ -6,6 +6,7 @@ export type UserRole = 'PATIENT' | 'DOCTOR' | 'ADMIN';
 
 
 export interface UserProfile {
+    notifications?: AppNotification[]; // If you add this later
     id: string;
     email: string;
     createdAt: string;
@@ -79,6 +80,9 @@ export interface SetUserProfile {
     };
 }
 export interface Doctor extends UserProfile {
+    medicalRecords?: MedicalRecord[];
+
+
     bio: string; // Required for doctors
     education: string;
     status: 'PENDING' | 'APPROVED' | 'REJECTED'; // Added
@@ -160,7 +164,7 @@ export interface Appointment {
     doctorId: string; // Added to match CreateAppointmentDto and entity relation
     patientId: string; // Non-nullable since patient is required in CreateAppointmentDto
     date: string; // ISO string (e.g., "2025-03-07T09:00:00.000Z")
-    status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"; // Matches backend status logic
+    status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "SCHEDULED"; // Matches backend status logic
     duration: number; // Added from backend adjustment (in minutes)
     type: string; // Added from backend adjustment (e.g., "Check-up", "Consultation")
     notes: string   // From User entity
@@ -209,7 +213,10 @@ export interface NotificationPreference {
 
 }
 // Supporting Patient interface for consistency (used in GET /patients)
-export interface Patient {
+export interface Patient extends UserProfile {
+    appointments?: Appointment[];
+    medicalRecords?: MedicalRecord[];
+    files?: PatientFile[];
     id: string;
     email: string;
     firstName: string;
@@ -219,6 +226,13 @@ export interface Patient {
     banned: boolean;
     address?: string;     // Nullable from Patient entity
     birthDate: string;   // Nullable from Patient entity
+}
+export interface PatientFile {
+    id: string;
+    patient: Patient;
+    doctor?: Doctor;
+    filePath: string;
+    createdAt: string;
 }
 
 // Supporting Availability interface for ScheduleManagement
@@ -246,11 +260,14 @@ export interface BookAppointmentRequest {
 // 🔹 Interface for Medical Records
 export interface MedicalRecord {
     id: string;
-    patientId: string;
-    doctorId: string;
+    patient: Patient; // Updated to full patient object
+    doctor: Doctor;   // Updated to full doctor object
     diagnosis: string;
-    treatment: string;
-    prescriptions: string[];
+    prescription?: string; // Optional, renamed from prescriptions
+    medicalTests?: string; // Added from backend entity
+    notes?: string;        // Added from backend entity
+    files?: string[];      // Added from backend entity
+    visibleTo?: Doctor[];  // Added from backend entity
     createdAt: string;
 }
 export interface Doctor {
@@ -328,14 +345,7 @@ export interface PaginatedDoctorsResponse {
     page: number;
     limit: number;
 }
-// 🔹 Interface for Doctors API
-export interface Doctor extends UserProfile {
-    bio: string;
-    education: string;
-    experience: string;
-    specialty: string;
-    licenseNumber: string;
-}
+
 
 // 🔹 Interface for Searching Doctors
 export interface SearchDoctorsRequest {
@@ -349,20 +359,14 @@ export interface DoctorAvailability {
     doctorId: string;
     availableDates: string[];
 }
-export interface Notification {
+export interface AppNotification { // Renamed from Notification
     id: string;
     message: string;
     isRead: boolean;
-    isArchived: boolean; // Added missing field
-    type: "APPOINTMENT" | "MESSAGE" | "REMINDER" | "SYSTEM" | "NEW_TYPE"; // Added missing field
-    priority: "LOW" | "MEDIUM" | "HIGH"; // Added missing field
-    metadata?: Record<string, any>; // Added missing field (optional)
+    isArchived: boolean;
+    type: "APPOINTMENT" | "MESSAGE" | "REMINDER" | "SYSTEM" | "NEW_TYPE";
+    priority: "LOW" | "MEDIUM" | "HIGH";
+    metadata?: Record<string, any>;
     createdAt: string;
-    recipient: {
-        id: string;
-        email: string;
-        firstName?: string;
-        lastName?: string;
-        role: UserRole;
-    };
+    recipient: UserProfile;
 }

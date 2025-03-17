@@ -5,7 +5,7 @@ import { Appointment } from "@/types/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { appointmentApi } from "@/lib/api";
+import { appointmentApi, prescriptionApi } from "@/lib/api";
 
 interface PatientListProps {
   doctorId: string;
@@ -37,6 +37,7 @@ export function PatientList({ doctorId, appointments }: PatientListProps) {
   const handleConfirm = async (appointmentId: string) => {
     try {
       const updated = await appointmentApi.confirmAppointment(appointmentId);
+      await prescriptionApi.createDraft(appointmentId); // Add this
       setAppointmentList(prev =>
         prev.map(a => (a.id === appointmentId ? { ...a, status: "CONFIRMED" } : a))
       );

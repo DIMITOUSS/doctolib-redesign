@@ -4,7 +4,14 @@ export type UserRole = 'PATIENT' | 'DOCTOR' | 'ADMIN';
 
 // 🔹 Interface for User Information
 
-
+export interface Medication {
+    id?: string;
+    name: string;
+    dosage: string;
+    frequency: string;
+    duration: string;
+    instructions?: string;
+}
 export interface UserProfile {
     notifications?: AppNotification[]; // If you add this later
     id: string;
@@ -188,6 +195,24 @@ export interface Appointment {
         lastName: string;
         specialty: string;  // From Doctor/User entity
     };
+}
+export interface Prescription {
+    id: string;
+    appointment: Appointment;
+    doctor: Doctor;
+    patient: Patient;
+    medicationName: string;
+    dosage: string;
+    frequency: string;
+    duration: string;
+    notes: string;
+    medications: Medication[];
+
+    status: 'DRAFT' | 'FINALIZED';
+    referenceNumber: string;
+    signature?: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface BannedPatient {

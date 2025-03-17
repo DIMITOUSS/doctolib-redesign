@@ -18,7 +18,8 @@ import {
     NotificationPreference,
     Login2FASuccessResponse,
     AppNotification,
-    BannedPatient
+    BannedPatient,
+    Prescription
 } from '@/types/auth';
 
 export const api = axios.create({
@@ -109,6 +110,18 @@ export const appointmentApi = {
         api.get<{ data: Appointment }>(`/appointments/${appointmentId}`).then((res) => res.data.data),
     getBannedPatients: (doctorId: string) =>
         api.get<{ data: BannedPatient[] }>(`/appointments/doctors/${doctorId}/banned-patients`).then((res) => res.data.data),
+};
+export const prescriptionApi = {
+    createDraft: (appointmentId: string) =>
+        api.post<Prescription>(`/prescriptions/appointment/${appointmentId}`).then((res) => res.data),
+    update: (id: string, data: Partial<Prescription>) =>
+        api.patch<Prescription>(`/prescriptions/${id}`, data).then((res) => res.data),
+    finalize: (id: string, signature: string) =>
+        api.patch<Prescription>(`/prescriptions/${id}/finalize`, { signature }).then((res) => res.data),
+    getByDoctor: () =>
+        api.get<Prescription[]>('/prescriptions/doctor').then((res) => res.data),
+    getByPatient: () =>
+        api.get<Prescription[]>('/prescriptions/patient').then((res) => res.data),
 };
 
 export const medicalRecordsApi = {

@@ -1,13 +1,12 @@
-// src/components/patient/PatientDashboard.tsx
-'use client'
-// src/components/patient/PatientDashboard.tsx
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bell } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { appointmentApi, notificationApi, protectedApi, patientsApi } from '@/lib/api';
-import { Appointment, AppNotification, UserProfile } from '@/types/auth';
+import { appointmentApi, notificationApi, protectedApi, patientsApi, prescriptionApi } from '@/lib/api'; // Add prescriptionApi
+import { Appointment, AppNotification, UserProfile, Prescription } from '@/types/auth'; // Add Prescription type
 import { useAuthStore } from '@/stores/auth';
 import io from 'socket.io-client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,6 +23,7 @@ export default function PatientDashboard() {
   const [totalAppointments, setTotalAppointments] = useState(0);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<{ statusBreakdown: { status: string; count: number }[]; monthlyTrends: { month: string; count: number }[] } | null>(null);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]); // Add prescriptions state
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { userId, token } = useAuthStore();
@@ -50,6 +50,7 @@ export default function PatientDashboard() {
       setNotifications((prev) => [notification, ...prev]);
       toast({ title: 'New Notification', description: notification.message });
       if (notification.type === 'APPOINTMENT') fetchAppointments();
+      if (notification.type === 'SYSTEM' && notification.message.includes('prescription')) fetchPrescriptions(); // Trigger prescription fetch
     });
 
     return () => {
@@ -106,10 +107,26 @@ export default function PatientDashboard() {
     }
   };
 
+  const fetchPrescriptions = async () => {
+    try {
+      const data = await prescriptionApi.getByPatient();
+      setPrescriptions(data);
+    } catch (err) {
+      setError('Failed to load prescriptions.');
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch prescriptions.' });
+    }
+  };
+
   useEffect(() => {
     if (!userId) return;
     setIsLoading(true);
-    Promise.all([fetchAppointments(), fetchNotifications(), fetchProfile(), fetchStats()]).finally(() => setIsLoading(false));
+    Promise.all([
+      fetchAppointments(),
+      fetchNotifications(),
+      fetchProfile(),
+      fetchStats(),
+      fetchPrescriptions(), // Add prescription fetch
+    ]).finally(() => setIsLoading(false));
   }, [userId, page, statusFilter, startDate, endDate]);
 
   const handleProfileUpdate = async () => {
@@ -167,6 +184,7 @@ export default function PatientDashboard() {
         <TabsList>
           <TabsTrigger value="appointments">Appointments</TabsTrigger>
           <TabsTrigger value="records">Medical Records</TabsTrigger>
+          <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger> {/* Add Prescriptions tab */}
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
@@ -236,6 +254,32 @@ export default function PatientDashboard() {
         </TabsContent>
         <TabsContent value="records">
           <MedicalRecordsView />
+        </TabsContent>
+        <TabsContent value="prescriptions">
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Prescriptions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {prescriptions.length > 0 ? (
+                prescriptions.map((prescription) => (
+                  <div key={prescription.id} className="mb-4 p-4 border rounded">
+                    <p><strong>Reference No:</strong> {prescription.referenceNumber}</p>
+                    <p><strong>Doctor:</strong> {prescription.doctor.firstName} {prescription.doctor.lastName}</p>
+                    <p><strong>Medication:</strong> {prescription.medicationName}</p>
+                    <p><strong>Dosage:</strong> {prescription.dosage}</p>
+                    <p><strong>Frequency:</strong> {prescription.frequency}</p>
+                    <p><strong>Duration:</strong> {prescription.duration}</p>
+                    <p><strong>Notes:</strong> {prescription.notes || 'N/A'}</p>
+                    <p><strong>Status:</strong> {prescription.status}</p>
+                    <p><strong>Issued:</strong> {new Date(prescription.createdAt).toLocaleString()}</p>
+                  </div>
+                ))
+              ) : (
+                <p>No prescriptions found.</p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
         <TabsContent value="profile">
           <Card>

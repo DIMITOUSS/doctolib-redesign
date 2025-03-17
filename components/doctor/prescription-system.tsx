@@ -20,7 +20,7 @@ export function PrescriptionSystem({ doctorId }: { doctorId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Prescription>>({
-    medications: [{ name: '', dosage: '', frequency: '', duration: '' }]
+    medications: [{ name: '', dosage: '', frequency: '', duration: '', quantity: '' }]
   });
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export function PrescriptionSystem({ doctorId }: { doctorId: string }) {
     setEditingId(prescription.id);
     setFormData({
       ...prescription,
-      medications: prescription.medications?.length ? prescription.medications : [{ name: '', dosage: '', frequency: '', duration: '' }]
+      medications: prescription.medications?.length ? prescription.medications : [{ name: '', dosage: '', frequency: '', duration: '', quantity: '' }]
     });
   };
 
@@ -59,7 +59,7 @@ export function PrescriptionSystem({ doctorId }: { doctorId: string }) {
   const addMedication = () => {
     setFormData({
       ...formData,
-      medications: [...(formData.medications || []), { name: '', dosage: '', frequency: '', duration: '' }]
+      medications: [...(formData.medications || []), { name: '', dosage: '', frequency: '', duration: '', quantity: '' }]
     });
   };
 
@@ -139,6 +139,7 @@ export function PrescriptionSystem({ doctorId }: { doctorId: string }) {
     doc.text("Dosage", 80, yPosition + 6);
     doc.text("Frequency", 120, yPosition + 6);
     doc.text("Duration", 160, yPosition + 6);
+    doc.text('Quantity', 180, yPosition + 6);
     yPosition += 12;
 
     // Medication Rows
@@ -149,6 +150,8 @@ export function PrescriptionSystem({ doctorId }: { doctorId: string }) {
       doc.text(med.dosage, 80, yPosition);
       doc.text(med.frequency, 120, yPosition);
       doc.text(med.duration, 160, yPosition);
+      doc.text(med.quantity, 180, yPosition);
+
       yPosition += 8;
 
       // Add spacing between medications
@@ -255,6 +258,14 @@ export function PrescriptionSystem({ doctorId }: { doctorId: string }) {
                                 />
                               </div>
                             </div>
+                            <div>
+                              <Label>Quantité</Label>
+                              <Input
+                                value={med.quantity}
+                                onChange={(e) => handleMedicationChange(index, 'quantity', e.target.value)}
+                                placeholder="e.g., 1ps"
+                              />
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -295,6 +306,11 @@ export function PrescriptionSystem({ doctorId }: { doctorId: string }) {
                                 <span className="font-medium">Duration:</span>
                                 <p>{med.duration}</p>
                               </div>
+                              <div>
+                                <span className="font-medium">Quantité:</span>
+                                <p>{med.quantity}</p>
+                              </div>
+
                             </div>
                           </div>
                         ))}

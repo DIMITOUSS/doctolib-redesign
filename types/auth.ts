@@ -11,6 +11,8 @@ export interface Medication {
     frequency: string;
     duration: string;
     instructions?: string;
+    quantity: string
+
 }
 export interface UserProfile {
     notifications?: AppNotification[]; // If you add this later

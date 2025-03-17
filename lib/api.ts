@@ -4,9 +4,8 @@ import { useAuthStore } from '@/stores/auth';
 import {
     LoginRequest,
     LoginResponse,
-    RegisterRequest,
+
     UserProfile,
-    BookAppointmentRequest,
     MedicalRecord,
     SearchDoctorsRequest,
     Availability,

@@ -104,12 +104,12 @@ export function PrescriptionSystem({ doctorId }: { doctorId: string }) {
     doc.setTextColor(255, 255, 255);
     doc.text("HEALTHCARE CLINIC", pageWidth / 2, 15, { align: "center" });
     doc.setFontSize(10);
-    doc.text("123 Medical Drive • City, State ZIP • (555) 123-4567", pageWidth / 2, 22, { align: "center" });
+    doc.text(`${doctorProfile?.street} • ${doctorProfile?.city} • ${doctorProfile?.phone}`, pageWidth / 2, 22, { align: "center" });
 
     // Doctor Information Section
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
-    doc.text(`Prescribing Physician: Dr. ${doctorProfile?.firstName} ${doctorProfile?.lastName}`, 20, 40);
+    doc.text(`Dr. ${doctorProfile?.firstName} ${doctorProfile?.lastName}`, 20, 40);
     doc.setFontSize(10);
     doc.text(`Specialty: ${doctorProfile?.specialty}`, 20, 45);
     doc.text(`License #: ${doctorProfile?.licenseNumber}`, 20, 50);
@@ -162,13 +162,9 @@ export function PrescriptionSystem({ doctorId }: { doctorId: string }) {
     // Signature Section
     yPosition = 250;
     doc.setFontSize(10);
-    doc.text("Physician Signature: ___________________________________", 20, yPosition);
-    doc.text("Date: _________________________", pageWidth - 70, yPosition);
+    doc.text(" Signature: ___________________________________", 20, yPosition);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth - 70, yPosition);
 
-    // Security Watermark
-    doc.setTextColor(230, 230, 230);
-    doc.setFontSize(48);
-    doc.text("VALID", 60, 150, { angle: 45 });
 
     doc.save(`Prescription_${prescription.referenceNumber}.pdf`);
   };
